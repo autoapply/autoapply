@@ -7,10 +7,12 @@ import tempfile
 import urllib2
 import hashlib
 import traceback
+import signal
+import threading
 
-def autoapply(config):
+def autoapply(exit, config):
     sleep = int(config['sleep'])
-    while True:
+    while not exit.is_set():
         print(time.ctime(time.time()))
         try:
             with tempfile.NamedTemporaryFile() as f:
@@ -20,7 +22,8 @@ def autoapply(config):
         except Exception:
             traceback.print_exc()
         print('Sleeping for %i seconds ...' % sleep)
-        time.sleep(sleep)
+        exit.wait(60)
+    print('Shutting down...')
 
 def fetch(url, out):
     print('Fetching %s ...' % url)
@@ -49,7 +52,7 @@ def check_ssh_key():
     # but SSH expects the key to have more restrictive permissions
     id_rsa = os.path.expanduser('~/.ssh/id_rsa')
     if os.path.exists(id_rsa):
-        mode = os.stat(id_rsa).st_mode & 07777
+        mode = os.stat(id_rsa).st_mode & 0777
         if mode != 0600:
             print('wrong mode %o, changing to 0600: %s' % (mode, id_rsa))
             os.chmod(id_rsa, 0600)
@@ -66,8 +69,6 @@ def kubectl(filename):
     subprocess.call(['kubectl', 'apply', '-f', filename])
 
 if __name__ == '__main__':
-    if 'KUBECONFIG' in os.environ:
-        print('KUBECONFIG=%s' % os.environ['KUBECONFIG'])
     config = {
         'url': None,
         'sleep': '60'
@@ -79,4 +80,10 @@ if __name__ == '__main__':
             config[key] = value
         if not value:
             raise Exception('Missing configuration: %s' % k)
-    autoapply(config)
+    exit = threading.Event()
+    def quit(signal, _frame):
+        print('Interrupted by %d, shutting down' % signal)
+        exit.set()
+    signal.signal(getattr(signal, 'SIGTERM'), quit)
+    signal.signal(getattr(signal, 'SIGINT'), quit)
+    autoapply(exit, config)

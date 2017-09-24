@@ -1,4 +1,4 @@
-IMAGE_NAME=pascalgn/autoapply
+IMAGE_NAME=pascalgn/autoapply:latest
 
 build:
 	docker build -t $(IMAGE_NAME) .

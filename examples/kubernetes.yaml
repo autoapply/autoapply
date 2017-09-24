@@ -14,12 +14,3 @@ spec:
           env:
             - name: URL
               value: 'https://raw.githubusercontent.com/pascalgn/hostinfo/master/examples/kubernetes.yaml'
-            - name: KUBECONFIG
-              value: /root/.kubeconfig/config
-          volumeMounts:
-            - name: kubeconfig-secret-volume
-              mountPath: /root/.kubeconfig
-      volumes:
-        - name: kubeconfig-secret-volume
-          secret:
-            secretName: kubeconfig-secret

@@ -7,8 +7,6 @@ Automatically apply changes from a remote URL to the Kubernetes cluster
 To start the service locally, run
 
     $ export URL=https://user:password123@example.com/repository/my-service.yaml
-    $ export SLEEP=60
-    $ export KUBECONFIG=~/.kube/config
     $ ./autoapply.py
 
 For a docker version, use

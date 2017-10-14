@@ -1,4 +1,4 @@
-FROM jfloff/alpine-python:2.7-slim
+FROM jfloff/alpine-python:3.4-slim
 
 RUN apk add --no-cache git openssh curl
 
@@ -7,7 +7,12 @@ RUN curl --fail "https://storage.googleapis.com/kubernetes-release/release/${KUB
     && chmod +x /usr/local/bin/kubectl \
     && echo 'StrictHostKeyChecking no' >> /etc/ssh/ssh_config
 
-COPY autoapply.py /root/autoapply.py
+COPY autoapply.sh /usr/local/bin/
+
+RUN adduser -D -g autoapply autoapply && pip install autoapply
+
+USER autoapply
+WORKDIR /home/autoapply
 
 ENV PYTHONUNBUFFERED 1
-CMD ["python", "/root/autoapply.py"]
+ENTRYPOINT [ "/bin/sh", "/usr/local/bin/autoapply.sh" ]

@@ -1,0 +1,9 @@
+#!/usr/bin/env python3
+
+# Copyright 2017 Pascal
+# Licensed under the ISC license, see LICENSE
+
+import autoapply.autoapply
+
+if __name__ == '__main__':
+    autoapply.autoapply.main()

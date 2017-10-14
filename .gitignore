@@ -1,3 +1,7 @@
 .*
 !.gitignore
+
 *.pyc
+*.egg-info
+build/
+dist/

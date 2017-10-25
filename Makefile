@@ -5,7 +5,7 @@ build: clean
 	python3 setup.py bdist_wheel
 
 clean:
-	rm -rf dist/
+	rm -rf build/ dist/
 
 docker:
 	docker build -t $(IMAGE_NAME) .

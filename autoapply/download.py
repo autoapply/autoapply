@@ -21,7 +21,7 @@ def download(remote, target):
             else:
                 raise Exception('Directory fetching not supported for %s, scheme %s' % (url.netloc, url.scheme))
         else:
-            f = remote.filename or 'output'
+            f = remote.filename or 'output.yaml'
             download_file(remote.url, '%s/%s' % (target, f))
     elif remote.scheme == 'ssh':
         download_git_archive(remote, target)

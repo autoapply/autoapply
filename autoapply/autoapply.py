@@ -97,7 +97,8 @@ def server(options):
         except:
             traceback.print_exc()
         print('Sleeping for %d seconds ...' % options.sleep)
-        exit.wait(options.sleep)
+        for s in range(options.sleep):
+            exit.wait(1)
     print('Shutting down...')
 
 def fetch_apply(remote, dry=False, password=None):
@@ -124,5 +125,5 @@ def read_password():
     path = os.path.expanduser(PASSWORD_FILE)
     if os.path.exists(path):
         with open(path) as f:
-            return f.read()
+            return f.read().strip()
     return None

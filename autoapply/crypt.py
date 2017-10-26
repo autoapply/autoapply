@@ -22,7 +22,7 @@ def encrypt_yaml(password, objs):
             data = obj['data']
             for key in data.keys():
                 raw = base64.b64decode(data[key])
-                data[key] = CRYPT_PREFIX + encrypt(password, raw)
+                data[key] = encrypt(password, raw)
         result.append(obj)
     return result
 
@@ -33,8 +33,7 @@ def decrypt_yaml(password, objs):
             data = obj['data']
             for key in data.keys():
                 if data[key].startswith(CRYPT_PREFIX):
-                    msg = data[key][len(CRYPT_PREFIX):]
-                    data[key] = base64.b64encode(decrypt(password, msg)).decode('ascii')
+                    data[key] = base64.b64encode(decrypt(password, data[key])).decode('ascii')
         result.append(obj)
     return result
 

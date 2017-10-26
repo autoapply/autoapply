@@ -1,18 +1,22 @@
-FROM jfloff/alpine-python:3.4-slim
+FROM python:3.6-alpine
 
-RUN apk add --no-cache git openssh curl
+ENV KUBECTL_VERSION v1.8.0
+ENV KUBECTL_URL "https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
 
-ENV KUBECTL_VERSION v1.7.5
-RUN curl --fail "https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" > /usr/local/bin/kubectl \
+RUN apk add --no-cache --virtual build-dependencies curl gcc libffi libffi-dev openssl-dev musl-dev \
+    && pip install 'cryptography==2.1.2' 'PyYAML==3.12' \
+    && curl --fail "${KUBECTL_URL}" > /usr/local/bin/kubectl \
     && chmod +x /usr/local/bin/kubectl \
-    && echo 'StrictHostKeyChecking no' >> /etc/ssh/ssh_config
+    && apk del build-dependencies \
+    && rm -rf /root/.cache \
+    && apk add --no-cache git openssh-client \
+    && echo 'StrictHostKeyChecking no' >> /etc/ssh/ssh_config \
+    && adduser -D -g autoapply autoapply
 
-COPY autoapply.sh /usr/local/bin/
-
-RUN adduser -D -g autoapply autoapply && pip install autoapply
+RUN pip install 'autoapply==0.3.0'
 
 USER autoapply
 WORKDIR /home/autoapply
 
 ENV PYTHONUNBUFFERED 1
-ENTRYPOINT [ "/bin/sh", "/usr/local/bin/autoapply.sh" ]
+ENTRYPOINT [ "/usr/local/bin/autoapply-server" ]

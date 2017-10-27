@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: autoapply-ssh-secret
+type: Opaque
+data:
+  # replace these secrets with your own generated SSH keys!
+  ID_RSA: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQ...
+  ID_RSA_PUB: c3NoLXJzYSBBQUFBQjNOemFDMXljMkVBQUFBRE...
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: autoapply
+spec:
+  template:
+    metadata:
+      labels:
+        app: autoapply
+    spec:
+      containers:
+        - name: autoapply-container
+          image: pascalgn/autoapply
+          env:
+            - name: URL
+              value: 'https://raw.githubusercontent.com/pascalgn/hostinfo/master/examples/kubernetes.yaml'
+          envFrom:
+            - secretRef:
+              name: autoapply-ssh-secret

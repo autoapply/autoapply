@@ -31,25 +31,8 @@ used. If no branch is given, *master* will be used.
 Providing SSH keys
 ~~~~~~~~~~~~~~~~~~
 
-To use SSH keys, be sure to specify ``600`` as default mode when
-mounting them. For Kubernetes, this would look like this:
-
-::
-
-    containers:
-      - name: autoapply-container
-        image: pascalgn/autoapply
-        env:
-          - name: URL
-            value: 'git@github.com:pascalgn/hostinfo.git:examples/kubernetes.yaml'
-        volumeMounts:
-          - name: autoapply-ssh-secret-volume
-            mountPath: /home/autoapply/.ssh
-    volumes:
-      - name: autoapply-ssh-secret-volume
-        secret:
-          secretName: autoapply-ssh-secret-volume
-          defaultMode: 600
+To use SSH keys, add the properties ``ID_RSA`` and ``ID_RSA_PUB``.
+For Kubernetes, see `kubernetes-ssh.yaml <https://github.com/pascalgn/autoapply/blob/master/examples/kubernetes-ssh.yaml>`_.
 
 Encrypted files
 ~~~~~~~~~~~~~~~
@@ -70,7 +53,9 @@ later be decrypted by autoapply when providing the password for the server:
     $ echo -n my-secret-passphrase > ~/.autoapply/crypt.key
     $ autoapply server https://example.com/repository/application-secrets.yaml
 
+For Kubernetes, see `kubernetes-crypt.yaml <https://github.com/pascalgn/autoapply/blob/master/examples/kubernetes-crypt.yaml>`_.
+
 License
 -------
 
-Autoapply is licensed under the ISC License
+Autoapply is licensed under the `ISC License <https://github.com/pascalgn/autoapply/blob/master/LICENSE>`_

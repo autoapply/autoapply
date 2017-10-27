@@ -37,11 +37,13 @@ def download_git_archive(remote, target):
     ''' Uses the git-archive command to download the required part of the repository '''
     r = '%s:%s' % (remote.host, remote.repository)
     components = remote.path.count('/')
-    git_archive = subprocess.Popen(['git', 'archive', '--remote', r, remote.branch, remote.path],
-            stdout=subprocess.PIPE)
-    tar = subprocess.Popen(['tar', '-x', '-C', target, '--strip-components=%d' % components],
-            stdin=git_archive.stdout, stdout=subprocess.PIPE)
-    tar.communicate()
+    git_archive_cmd = ['git', 'archive', '--remote', r, remote.branch, remote.path]
+    tar_cmd = ['tar', '-x', '-C', target, '--strip-components=%d' % components]
+    with subprocess.Popen(git_archive_cmd, stdout=subprocess.PIPE) as git_archive:
+        with subprocess.Popen(tar_cmd, stdin=git_archive.stdout, stdout=subprocess.PIPE) as tar:
+            tar.communicate()
+    if git_archive.returncode != 0 or tar.returncode != 0:
+        raise Exception('Download failed!')
 
 def download_directory_github(remote, target):
     # we have to use the GitHub API, because git archive is not supported:

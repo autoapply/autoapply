@@ -1,2 +1,16 @@
 #!/bin/sh
+if [ -n "${ID_RSA}" ] && [ -n "${ID_RSA_PUB}" ]; then
+    mkdir -p "${HOME}/.ssh" && \
+    chmod 700 "${HOME}/.ssh" && \
+    echo "${ID_RSA}" > "${HOME}/.ssh/id_rsa" && \
+    chmod 600 "${HOME}/.ssh/id_rsa" && \
+    echo "${ID_RSA_PUB}" > "${HOME}/.ssh/id_rsa.pub" && \
+    chmod 644 "${HOME}/.ssh/id_rsa.pub"
+fi
+if [ -n "${CRYPT_KEY}" ]; then
+    mkdir -p "${HOME}/.autoapply" && \
+    chmod 700 "${HOME}/.autoapply" && \
+    echo "${CRYPT_KEY}" > "${HOME}/.autoapply/crypt.key" && \
+    chmod 600 "${HOME}/.autoapply/crypt.key"
+fi
 exec autoapply server --sleep "${SLEEP:-60}" "${URL}" "${@}"

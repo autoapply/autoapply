@@ -9,11 +9,11 @@ RUN apk add --no-cache --virtual build-dependencies curl gcc libffi libffi-dev o
     && chmod +x /usr/local/bin/kubectl \
     && apk del build-dependencies \
     && rm -rf /root/.cache \
-    && apk add --no-cache git openssh-client \
+    && apk add --no-cache git openssh-client tar \
     && echo 'StrictHostKeyChecking no' >> /etc/ssh/ssh_config \
     && adduser -D -g autoapply autoapply
 
-RUN pip install 'autoapply==0.3.0'
+RUN pip install 'autoapply==0.3.1'
 
 USER autoapply
 WORKDIR /home/autoapply

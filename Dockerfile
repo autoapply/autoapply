@@ -13,7 +13,7 @@ RUN apk add --no-cache --virtual build-dependencies curl gcc libffi libffi-dev o
     && echo 'StrictHostKeyChecking no' >> /etc/ssh/ssh_config \
     && adduser -D -g autoapply autoapply
 
-RUN pip install 'autoapply==0.3.1'
+RUN pip install 'autoapply==0.3.2'
 
 USER autoapply
 WORKDIR /home/autoapply

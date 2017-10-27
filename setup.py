@@ -9,7 +9,7 @@ with open(os.path.join(root, 'README.rst'), encoding='utf-8') as f:
 
 setuptools.setup(
     name = 'autoapply',
-    version = '0.3.1',
+    version = '0.3.2',
     description = 'Automatically apply changes from a remote URL to the Kubernetes cluster',
     long_description = long_description,
     url = 'https://github.com/pascalgn/autoapply',

@@ -30,6 +30,7 @@ def main():
     parser_apply.add_argument('-n', '--dry-run', action='store_true',
             help="don't execute any actions, only output what would be done")
     parser_crypt = subparsers.add_parser('crypt', help='encrypt and decrypt input')
+    parser_crypt.add_argument('-p', '--password', type=str, metavar='<password>', help='a file with the password to use')
     parser_crypt.add_argument('-f', '--file', type=str, metavar='<file>', help='the file to encrypt')
     parser_crypt.add_argument('-d', '--decrypt', action='store_true', help='decrypt the input instead of encrypt')
     parser_server = subparsers.add_parser('server', help='regularly check for changes and apply them')
@@ -53,7 +54,11 @@ def apply(options):
     fetch_apply(r, options.dry_run, password)
 
 def crypt(options):
-    password = getpass.getpass()
+    if options.password:
+        with open(options.password) as f:
+            password = f.read().strip()
+    else:
+        password = getpass.getpass()
     if options.file:
         if not os.path.exists(options.file):
             raise Exception('no such file: %s' % options.file)

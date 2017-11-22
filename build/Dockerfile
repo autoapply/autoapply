@@ -17,4 +17,4 @@ RUN yarn global add 'autoapply@0.5.0'
 USER autoapply
 WORKDIR /home/autoapply
 
-ENTRYPOINT [ "sh", "-c", "/usr/local/bin/autoapply.sh" ]
+ENTRYPOINT [ "sh", "/usr/local/bin/autoapply.sh" ]

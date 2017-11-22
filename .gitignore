@@ -1,7 +1,5 @@
 .*
 !.gitignore
+!.eslintrc.json
 
-*.pyc
-*.egg-info
-build/
-dist/
+node_modules/

@@ -1,23 +1,16 @@
 IMAGE_NAME=pascalgn/autoapply:latest
 
-build: clean tests
-	python3 setup.py sdist
-	python3 setup.py bdist_wheel
-
-clean:
-	rm -rf build/ dist/ *.egg-info
+all: tests
 
 tests:
-	python3 -m unittest
+	yarn test
+	yarn lint
 
-upload-test: build
-	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+upload: tests
+	npm publish
 
-upload: build
-	twine upload dist/*
-
-docker:
-	docker build -t $(IMAGE_NAME) .
+docker: tests
+	docker build -t $(IMAGE_NAME) build/
 
 docker-push: docker
 	docker push $(IMAGE_NAME)

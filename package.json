@@ -1,0 +1,36 @@
+{
+  "name": "autoapply",
+  "version": "0.5.0",
+  "description": "Automatically apply changes to a Kubernetes cluster",
+  "license": "MIT",
+  "author": "Pascal",
+  "homepage": "https://github.com/pascalgn/autoapply",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pascalgn/autoapply.git"
+  },
+  "bin": {
+    "autoapply": "./bin/autoapply.js"
+  },
+  "dependencies": {
+    "argparse": "^1.0.7",
+    "child-process-promise": "^2.2.1",
+    "colors": "^1.1.2",
+    "date-format": "^1.2.0",
+    "fs-extra": "^4.0.2",
+    "js-yaml": "^3.9.1",
+    "pkginfo": "^0.4.1",
+    "winston": "^2.4.0"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "test": "mocha --recursive"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
+    "eslint": "^4.10.0",
+    "mocha": "^4.0.1",
+    "should": "^13.1.3"
+  }
+}

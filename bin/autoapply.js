@@ -8,6 +8,7 @@ const fsExtra = require('fs-extra');
 const dateFormat = require('date-format');
 const argparse = require('argparse');
 const yaml = require('js-yaml');
+const tmpPromise = require('tmp-promise');
 const childProcessPromise = require('child-process-promise');
 require('colors');
 
@@ -41,10 +42,6 @@ async function main() {
     parser.addArgument(['-d', '--debug'], {
         action: 'storeTrue',
         help: 'Show debugging output'
-    });
-    parser.addArgument(['-e', '--env'], {
-        metavar: '<env-var>',
-        help: 'Reads'
     });
     parser.addArgument(['config'], {
         nargs: '?',
@@ -81,30 +78,37 @@ async function run(config, options) {
     let loop = 1;
     const loops = options.loops;
     while (true) {
-        for (const command of commands) {
-            try {
-                await command.run();
-            } catch (e) {
-                if (onerror === 'fail') {
-                    throw e;
-                } else if (options.debug) {
-                    logger.error('Command failed:', e);
-                } else {
-                    if (e.code === 'ENOENT') {
-                        logger.error('Command not found!');
-                    } else if (e.message) {
-                        logger.error(e.message);
-                    } else if (e.code) {
-                        logger.error(`Command failed with exit code ${e.code}`);
+        const tmpDir = await tmpPromise.dir();
+        try {
+            for (const command of commands) {
+                try {
+                    await command.run(tmpDir.path);
+                } catch (e) {
+                    if (onerror === 'fail') {
+                        throw e;
+                    } else if (options.debug) {
+                        logger.error('Command failed:', e);
                     } else {
-                        logger.error('Command failed!');
+                        if (e.code === 'ENOENT') {
+                            logger.error('Command not found!');
+                        } else if (e.message) {
+                            logger.error(e.message);
+                        } else if (e.code) {
+                            logger.error(`Command failed with exit code ${e.code}`);
+                        } else {
+                            logger.error('Command failed!');
+                        }
                     }
                 }
             }
+        } finally {
+            await fsExtra.remove(tmpDir.path);
         }
+
         if (loops && ++loop > loops) {
             break;
         }
+
         logger.info(`Sleeping for ${sleepSec}s...`);
         await sleep(sleepSec * 1000);
     }
@@ -119,7 +123,7 @@ class Command {
         this.command = command;
     }
 
-    run() {
+    run(cwd) {
         let cmd;
         let stdout = 'pipe';
         let stderr = 'pipe';
@@ -135,6 +139,7 @@ class Command {
 
         const shell = (typeof cmd === 'string');
         const options = {
+            'cwd': cwd,
             'stdio': ['ignore', 'pipe', 'pipe'],
             'shell': shell
         };

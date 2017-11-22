@@ -1,6 +1,6 @@
 {
   "name": "autoapply",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Automatically apply changes to a Kubernetes cluster",
   "license": "MIT",
   "author": "Pascal",
@@ -20,6 +20,7 @@
     "fs-extra": "^4.0.2",
     "js-yaml": "^3.9.1",
     "pkginfo": "^0.4.1",
+    "tmp-promise": "^1.0.4",
     "winston": "^2.4.0"
   },
   "scripts": {

@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: autoapply-ssh-secret
+type: Opaque
+data:
+  # replace these secrets with your own generated SSH keys! To create this secret, use:
+  # kubectl create secret generic autoapply-ssh-secret --dry-run --from-file=id_rsa,id_rsa.pub -o yaml
+  ID_RSA: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQ...
+  ID_RSA_PUB: c3NoLXJzYSBBQUFBQjNOemFDMXljMkVBQUFBRE...
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: autoapply
+spec:
+  template:
+    metadata:
+      labels:
+        app: autoapply
+    spec:
+      containers:
+        - name: autoapply
+          image: pascalgn/autoapply
+          env:
+            - name: AUTOAPPLY_CONFIG
+              value: |
+                init:
+                  # Docker mounts directories as root, so this is a workaround to have SSH keys
+                  # in ~/.ssh with the correct restrictive permissions (only readable by user)
+                  commands:
+                    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+                    - echo "${id_rsa}" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
+                    - echo "${id_rsa.pub}" > ~/.ssh/id_rsa.pub
+                loop:
+                  sleep: 30
+                  commands:
+                    - ['git', 'clone', '--depth', '1', 'git@github.com:pascalgn/hostinfo']
+                    - ['kubectl', 'apply', '-f', 'hostinfo/examples/kubernetes.yaml']

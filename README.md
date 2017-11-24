@@ -19,16 +19,18 @@ For a docker version, use
 
 A basic configuration file will look like this:
 
-    sleep: 60
-    commands:
-    - git clone --depth 1 https://github.com/pascalgn/hostinfo
-    - kubectl apply -f hostinfo/examples/kubernetes.yaml
+    loop:
+      sleep: 60
+      commands:
+      - git clone --depth 1 https://github.com/pascalgn/hostinfo
+      - kubectl apply -f hostinfo/examples/kubernetes.yaml
 
 When running, autoapply will fetch the latest commit from the git repository and then apply the
 configuration to the Kubernetes cluster. After sleeping for 60 seconds, the commands will be
 executed again.
 
-See [kubernetes.yaml](examples/kubernetes.yaml) for a working example.
+See [kubernetes-simple.yaml](examples/kubernetes-simple.yaml) for a simple working example
+or [kubernetes-ssh.yaml](examples/kubernetes-ssh.yaml) for a more avanced setup.
 
 # License
 

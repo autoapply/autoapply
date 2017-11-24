@@ -7,7 +7,7 @@ tests:
 	yarn lint
 
 upload: tests
-	npm publish
+	yarn publish
 
 docker: tests
 	docker build -t $(IMAGE_NAME) build/

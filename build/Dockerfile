@@ -12,7 +12,7 @@ RUN apk add --no-cache curl git openssh-client tar \
     && adduser -D -g autoapply autoapply
 
 COPY autoapply.sh /usr/local/bin/autoapply.sh
-RUN yarn global add 'autoapply@0.5.0'
+RUN yarn global add 'autoapply@0.5.3'
 
 USER autoapply
 WORKDIR /home/autoapply

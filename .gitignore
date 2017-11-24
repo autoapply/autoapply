@@ -3,3 +3,4 @@
 !.eslintrc.json
 
 node_modules/
+*.log

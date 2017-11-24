@@ -49,59 +49,64 @@ async function main() {
         help: 'Configuration file to use'
     });
     const args = parser.parseArgs();
-    let configFile;
-    if (args.config) {
-        configFile = args.config;
-    } else if (await fsExtra.exists('autoapply.yaml')) {
-        configFile = 'autoapply.yaml';
-    } else if (await fsExtra.exists('autoapply.yml')) {
-        configFile = 'autoapply.yml';
-    } else {
-        console.error('no configuration file found and none given!');
-        return 1;
+    try {
+        let configFile;
+        if (args.config) {
+            configFile = args.config;
+        } else if (await fsExtra.exists('autoapply.yaml')) {
+            configFile = 'autoapply.yaml';
+        } else if (await fsExtra.exists('autoapply.yml')) {
+            configFile = 'autoapply.yml';
+        } else {
+            console.error('no configuration file found and none given!');
+            return 1;
+        }
+        const content = await fsExtra.readFile(configFile);
+        const obj = yaml.safeLoad(content);
+        await run(obj, args);
+    } catch (e) {
+        if (args.debug) {
+            throw e;
+        } else {
+            console.error(e.message || 'unknown error!');
+            return 5;
+        }
     }
-    const content = await fsExtra.readFile(configFile);
-    const obj = yaml.safeLoad(content);
-    await run(obj, args);
     return 0;
 }
 
-async function run(config, options) {
-    if (!config.commands || !config.commands.length) {
-        throw new Error('no commands given in the configuration file!');
+async function run(config, options = {}) {
+    if (!config.loop) {
+        throw new Error('invalid configuration!');
     }
 
-    const onerror = parseOnError(config.onerror);
-    const sleepSec = parseSleep(config.sleep);
-    const commands = config.commands.map(cmd => new Command(cmd));
+    if (!config.loop.commands || !config.loop.commands.length) {
+        throw new Error('no loop commands given in the configuration file!');
+    }
+
+    const sleepSec = parseSleep(config.loop.sleep);
+    const loopOnError = parseOnError(config.loop.onerror, 'continue');
+    const loopCommands = config.loop.commands.map(cmd => new Command(cmd));
+
+    if (config.init && config.init.commands && config.init.commands.length) {
+        logger.info('Running init commands...');
+        const initOnError = parseOnError(config.init.onerror, 'fail');
+        const initCommands = config.init.commands.map(cmd => new Command(cmd));
+        await runCommands(initCommands, '.', initOnError, options.debug);
+    } else {
+        logger.info('No init commands.');
+    }
+
+    logger.info('Running loop commands...');
 
     let loop = 1;
     const loops = options.loops;
     while (true) {
         const tmpDir = await tmpPromise.dir();
         try {
-            for (const command of commands) {
-                try {
-                    await command.run(tmpDir.path);
-                } catch (e) {
-                    if (onerror === 'fail') {
-                        throw e;
-                    } else if (options.debug) {
-                        logger.error('Command failed:', e);
-                    } else {
-                        if (e.code === 'ENOENT') {
-                            logger.error('Command not found!');
-                        } else if (e.message) {
-                            logger.error(e.message);
-                        } else if (e.code) {
-                            logger.error(`Command failed with exit code ${e.code}`);
-                        } else {
-                            logger.error('Command failed!');
-                        }
-                    }
-                }
-            }
+            await runCommands(loopCommands, tmpDir.path, loopOnError, options.debug);
         } finally {
+            logger.debug('Deleting directory...');
             await fsExtra.remove(tmpDir.path);
         }
 
@@ -109,55 +114,87 @@ async function run(config, options) {
             break;
         }
 
-        logger.info(`Sleeping for ${sleepSec}s...`);
-        await sleep(sleepSec * 1000);
+        if (sleepSec) {
+            logger.info(`Sleeping for ${sleepSec}s...`);
+            await sleep(sleepSec * 1000);
+        } else {
+            logger.debug(`Not sleeping (sleep = 0)`);
+        }
     }
 }
 
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+async function runCommands(commands, cwd, onerror, debug) {
+    logger.debug('Executing in directory:', cwd);
+    for (const command of commands) {
+        try {
+            await command.run(cwd);
+        } catch (e) {
+            if (onerror === 'fail') {
+                throw e;
+            } else if (debug) {
+                logger.error('Command failed:', e);
+            } else {
+                if (e.code === 'ENOENT') {
+                    logger.error('Command not found!');
+                } else if (e.message) {
+                    logger.error(e.message);
+                } else if (e.code) {
+                    logger.error(`Command failed with exit code ${e.code}`);
+                } else {
+                    logger.error('Command failed!');
+                }
+            }
+        }
+    }
 }
 
 class Command {
     constructor(command) {
-        this.command = command;
+        if (isObject(command)) {
+            this.command = command['command'];
+            this.stdout = parseStdio(command['stdout']);
+            this.stderr = parseStdio(command['stderr']);
+        } else {
+            this.command = command;
+            this.stdout = 'pipe';
+            this.stderr = 'pipe';
+        }
+        if (Array.isArray(this.command)) {
+            if (!this.command.length || !this.command[0]) {
+                throw new Error(`invalid command: ${command}`);
+            }
+        } else {
+            this.command = (this.command || '').trim();
+            if (!this.command) {
+                throw new Error(`invalid command: ${command}`);
+            }
+        }
     }
 
     run(cwd) {
-        let cmd;
-        let stdout = 'pipe';
-        let stderr = 'pipe';
-        if (isObject(this.command)) {
-            cmd = this.command['command'];
-            stdout = parseStdio(this.command['stdout']);
-            stderr = parseStdio(this.command['stderr']);
-        } else {
-            cmd = this.command;
-        }
+        logger.info('Executing command:', JSON.stringify(this.command));
 
-        logger.info('Executing command:', JSON.stringify(cmd));
-
-        const shell = (typeof cmd === 'string');
+        const shell = (typeof this.command === 'string');
         const options = {
             'cwd': cwd,
-            'stdio': ['ignore', 'pipe', 'pipe'],
+            'stdio': ['ignore', this.stdout, this.stderr],
             'shell': shell
         };
 
         let promise;
         if (shell) {
-            promise = childProcessPromise.spawn(cmd, [], options);
-        } else if (Array.isArray(cmd)) {
-            promise = childProcessPromise.spawn(cmd[0], cmd.slice(1), options);
+            promise = childProcessPromise.spawn(this.command, [], options);
+        } else if (Array.isArray(this.command)) {
+            promise = childProcessPromise.spawn(this.command[0], this.command.slice(1), options);
         } else {
             throw new Error(`invalid type: ${this.cmd}`);
         }
 
         const childProcess = promise.childProcess;
-        if (stdout === 'pipe') {
+        if (this.stdout === 'pipe') {
             childProcess.stdout.on('data', data => process.stdout.write(data));
         }
-        if (stderr === 'pipe') {
+        if (this.stderr === 'pipe') {
             childProcess.stderr.on('data', data => process.stderr.write(data));
         }
 
@@ -169,9 +206,9 @@ function isObject(value) {
     return value && typeof value === 'object' && value.constructor === Object;
 }
 
-function parseOnError(value) {
+function parseOnError(value, defaultValue) {
     if (!value) {
-        return 'continue';
+        return defaultValue;
     } else if (value === 'continue' || value === 'fail') {
         return value;
     } else {
@@ -180,11 +217,17 @@ function parseOnError(value) {
 }
 
 function parseSleep(value) {
-    if (!value) {
+    if (value === 0 || value === '0') {
+        return 0;
+    } else if (!value || value < 0) {
+        logger.debug('using default sleep value!');
         return 60;
     } else {
         const sleep = parseInt(value);
-        if (sleep) {
+        if (sleep < 0) {
+            logger.debug('using default sleep value!');
+            return 60;
+        } else if (sleep || sleep === 0) {
             return sleep;
         } else {
             throw new Error(`invalid sleep value: ${value}`);
@@ -200,6 +243,10 @@ function parseStdio(value) {
     } else {
         throw new Error(`invalid stdio value: ${value}`);
     }
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 module.exports.logger = logger;

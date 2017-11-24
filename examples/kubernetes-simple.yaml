@@ -14,7 +14,7 @@ spec:
           env:
             - name: AUTOAPPLY_CONFIG
               value: |
-                sleep: 60
-                commands:
-                  - ['git', 'clone', '--depth', '1', 'https://github.com/pascalgn/hostinfo']
-                  - ['kubectl', 'apply', '-f', 'hostinfo/examples/kubernetes.yaml']
+                loop:
+                  commands:
+                    - ['git', 'clone', '--depth', '1', 'https://github.com/pascalgn/hostinfo']
+                    - ['kubectl', 'apply', '-f', 'hostinfo/examples/kubernetes.yaml']

@@ -1,6 +1,10 @@
 # autoapply
 
-[![Build Status](https://img.shields.io/travis/pascalgn/autoapply.svg?style=flat-square)](https://travis-ci.org/pascalgn/autoapply) [![NPM version](https://img.shields.io/npm/v/autoapply.svg?style=flat-square)](https://www.npmjs.org/package/autoapply)
+[![Build Status](https://img.shields.io/travis/pascalgn/autoapply.svg?style=flat-square)](https://travis-ci.org/pascalgn/autoapply)
+[![Coverage status](https://img.shields.io/coveralls/github/pascalgn/autoapply.svg?style=flat-square)](https://coveralls.io/github/pascalgn/autoapply)
+[![Dependency status](https://img.shields.io/david/pascalgn/autoapply.svg?style=flat-square)](https://david-dm.org/pascalgn/autoapply)
+[![NPM version](https://img.shields.io/npm/v/autoapply.svg?style=flat-square)](https://www.npmjs.com/package/autoapply)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/pascalgn/autoapply/blob/master/LICENSE)
 
 Automatically apply changes to a Kubernetes cluster.
 

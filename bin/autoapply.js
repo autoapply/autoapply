@@ -17,7 +17,7 @@ require('pkginfo')(module);
 const logger = new winston.Logger({
     level: process.env.LOG_LEVEL || 'info',
     transports: [
-        new (winston.transports.Console)({
+        new winston.transports.Console({
             formatter: (msg) => {
                 let s = dateFormat.asString() + ' ' + winston.config.colorize(msg.level);
                 if (msg.message) {
@@ -58,7 +58,7 @@ async function main() {
         } else if (await fsExtra.exists('autoapply.yml')) {
             configFile = 'autoapply.yml';
         } else {
-            console.error('no configuration file found and none given!');
+            logger.error('no configuration file found and none given!');
             return 1;
         }
         const content = await fsExtra.readFile(configFile);
@@ -68,7 +68,7 @@ async function main() {
         if (args.debug) {
             throw e;
         } else {
-            console.error(e.message || 'unknown error!');
+            logger.error(e.message || 'unknown error!');
             return 5;
         }
     }

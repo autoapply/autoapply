@@ -1,5 +1,7 @@
 # autoapply
 
+[![Build Status](https://img.shields.io/travis/pascalgn/autoapply.svg?style=flat-square)](https://travis-ci.org/pascalgn/autoapply) [![NPM version](https://img.shields.io/npm/v/autoapply.svg?style=flat-square)](https://www.npmjs.org/package/autoapply)
+
 Automatically apply changes to a Kubernetes cluster.
 
 ## Usage

@@ -16,5 +16,5 @@ spec:
               value: |
                 loop:
                   commands:
-                    - ['git', 'clone', '--depth', '1', 'https://github.com/pascalgn/hostinfo']
-                    - ['kubectl', 'apply', '-f', 'hostinfo/examples/kubernetes.yaml']
+                    - git clone --depth 1 https://github.com/pascalgn/hostinfo
+                    - kubectl apply -f hostinfo/examples/kubernetes.yaml

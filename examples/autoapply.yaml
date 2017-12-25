@@ -1,0 +1,42 @@
+# optional section, configuring the internal HTTP server
+server:
+  # set this to false if you do not want any server running
+  enabled: true
+  # the HTTP port that the server will listen on, default is 3000
+  port: 3000
+
+# optional section, defining any commands that should be executed on startup
+init:
+  # list of commands that should be run on startup
+  commands:
+  # the simple string form will use the shell,
+  # so environment variables etc. can be used
+  - ls ${HOME}
+  # the array form will not use the shell. In this case, "ls" will try to list
+  # the contents of a directory with the literal name "${HOME}". This will
+  # likely fail with "No such file or directory"
+  - ['ls', '${HOME}']
+  # extended syntax allows additional options:
+  - command: ['ls', '/dev']
+    # how to treat the standard output of the command? possible values:
+    # 'pipe' - print the output as the standard output of the autoapply command
+    # 'ignore' - discard any output (like redirecting to /dev/null)
+    stdout: pipe
+    # same options as for "stdout", but for the standard error of the command
+    stderr: ignore
+
+# required section, defining loop commands
+loop:
+  # time to wait (in seconds) between each iteration
+  # a value of 0 disables sleeping, default is 60 (1 minute)
+  sleep: 60
+  # what should happen when a command fails? possible values:
+  # 'ignore' - ignore the error and continue with the next command
+  # 'continue' - don't execute any remaining commands and continue with the next loop
+  # 'fail' - exit with an error message
+  onerror: 'continue'
+  # list of commands that should be run in a loop, after the commands
+  # defined in the "init" section have finished
+  commands:
+  # see section "init" for the command syntax
+  - 'date'

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const util = require('util');
+const http = require('http');
 const process = require('process');
 
 const winston = require('winston');
@@ -49,6 +50,9 @@ async function main() {
         help: 'Configuration file to use'
     });
     const args = parser.parseArgs();
+    if (args.debug) {
+        logger.level = 'debug';
+    }
     try {
         let configFile;
         if (args.config) {
@@ -62,8 +66,8 @@ async function main() {
             return 1;
         }
         const content = await fsExtra.readFile(configFile);
-        const obj = yaml.safeLoad(content);
-        await run(obj, args);
+        const config = yaml.safeLoad(content);
+        await run(config, args);
     } catch (e) {
         if (args.debug) {
             throw e;
@@ -87,6 +91,13 @@ async function run(config, options = {}) {
     const sleepSec = parseSleep(config.loop.sleep);
     const loopOnError = parseOnError(config.loop.onerror, 'continue');
     const loopCommands = config.loop.commands.map(cmd => new Command(cmd));
+
+    const ctx = {};
+
+    if (!config.server || config.server.enabled !== false) {
+        const port = (config.server ? config.server.port : 0) || 3000;
+        ctx.server = await startServer(port);
+    }
 
     if (config.init && config.init.commands && config.init.commands.length) {
         logger.info('Running init commands...');
@@ -121,6 +132,60 @@ async function run(config, options = {}) {
             logger.debug(`Not sleeping (sleep = 0)`);
         }
     }
+
+    return ctx;
+}
+
+function startServer(port = 3000) {
+    const server = http.createServer(handleRequest);
+    return new Promise((resolve, reject) => {
+        server.listen(port, (err) => {
+            if (err) {
+                reject(err);
+            } else {
+                logger.info(`Server is listening on port ${port}...`);
+                resolve(server);
+            }
+        });
+    });
+}
+
+function handleRequest(request, response) {
+    logger.debug('Request received:', request.method, request.url);
+
+    let handler;
+    if (request.url === '/healthz') {
+        handler = () => 'OK';
+    } else {
+        handler = null;
+    }
+
+    if (handler) {
+        if (request.method === 'HEAD') {
+            response.writeHead(200, http.STATUS_CODES[200]);
+            response.end();
+        } else if (request.method === 'GET') {
+            let msg;
+            try {
+                msg = handler();
+            } catch (e) {
+                logger.info('Error handling request:', request.url, e.message || 'unknown error!');
+                response.writeHead(500, http.STATUS_CODES[500]);
+                response.end('Internal server error!');
+                msg = null;
+            }
+            if (msg) {
+                response.writeHead(200, http.STATUS_CODES[200]);
+                response.end(msg);
+            }
+        } else {
+            response.writeHead(405, http.STATUS_CODES[405]);
+            response.end('Only GET or HEAD supported!');
+        }
+    } else {
+        response.writeHead(404, http.STATUS_CODES[404]);
+        response.end('Not found!');
+    }
 }
 
 async function runCommands(commands, cwd, onerror, debug) {
@@ -131,17 +196,27 @@ async function runCommands(commands, cwd, onerror, debug) {
         } catch (e) {
             if (onerror === 'fail') {
                 throw e;
-            } else if (debug) {
-                logger.error('Command failed:', e);
             } else {
-                if (e.code === 'ENOENT') {
-                    logger.error('Command not found!');
-                } else if (e.message) {
-                    logger.error(e.message);
-                } else if (e.code) {
-                    logger.error(`Command failed with exit code ${e.code}`);
+                if (debug) {
+                    logger.error('Command failed:', e);
                 } else {
-                    logger.error('Command failed!');
+                    if (e.code === 'ENOENT') {
+                        logger.error('Command not found!');
+                    } else if (e.message) {
+                        logger.error(e.message);
+                    } else if (e.code) {
+                        logger.error(`Command failed with exit code ${e.code}`);
+                    } else {
+                        logger.error('Command failed!');
+                    }
+                }
+                if (onerror === 'ignore') {
+                    continue;
+                } else if (onerror === 'continue') {
+                    // stop any remaining commands and continue with the next loop iteration
+                    break;
+                } else {
+                    throw new Error('invalid onerror value!');
                 }
             }
         }
@@ -159,15 +234,17 @@ class Command {
             this.stdout = 'pipe';
             this.stderr = 'pipe';
         }
-        if (Array.isArray(this.command)) {
+        if (typeof this.command === 'string') {
+            this.command = this.command.trim();
+            if (!this.command) {
+                throw new Error(`invalid command: ${this.command}`);
+            }
+        } else if (Array.isArray(this.command)) {
             if (!this.command.length || !this.command[0]) {
-                throw new Error(`invalid command: ${command}`);
+                throw new Error(`invalid command: ${this.command}`);
             }
         } else {
-            this.command = (this.command || '').trim();
-            if (!this.command) {
-                throw new Error(`invalid command: ${command}`);
-            }
+            throw new Error(`invalid command: ${this.command}`);
         }
     }
 
@@ -184,10 +261,8 @@ class Command {
         let promise;
         if (shell) {
             promise = childProcessPromise.spawn(this.command, [], options);
-        } else if (Array.isArray(this.command)) {
-            promise = childProcessPromise.spawn(this.command[0], this.command.slice(1), options);
         } else {
-            throw new Error(`invalid type: ${this.cmd}`);
+            promise = childProcessPromise.spawn(this.command[0], this.command.slice(1), options);
         }
 
         const childProcess = promise.childProcess;
@@ -209,7 +284,7 @@ function isObject(value) {
 function parseOnError(value, defaultValue) {
     if (!value) {
         return defaultValue;
-    } else if (value === 'continue' || value === 'fail') {
+    } else if (value === 'ignore' || value === 'continue' || value === 'fail') {
         return value;
     } else {
         throw new Error(`invalid onerror value: ${value}`);
@@ -223,11 +298,8 @@ function parseSleep(value) {
         logger.debug('using default sleep value!');
         return 60;
     } else {
-        const sleep = parseInt(value);
-        if (sleep < 0) {
-            logger.debug('using default sleep value!');
-            return 60;
-        } else if (sleep || sleep === 0) {
+        const sleep = parseFloat(value);
+        if (sleep || sleep === 0) {
             return sleep;
         } else {
             throw new Error(`invalid sleep value: ${value}`);

@@ -33,7 +33,7 @@ const logger = new winston.Logger({
     ]
 });
 
-async function main() {
+async function main(argv = null) {
     const parser = new argparse.ArgumentParser({
         prog: module.exports.name,
         version: module.exports.version,
@@ -45,98 +45,97 @@ async function main() {
         help: 'Show debugging output'
     });
     parser.addArgument(['config'], {
-        nargs: '?',
-        metavar: '<config-file>',
+        metavar: '<configuration>',
         help: 'Configuration file to use'
     });
-    const args = parser.parseArgs();
+    const args = parser.parseArgs(argv);
     if (args.debug) {
         logger.level = 'debug';
     }
+    let config;
     try {
-        let configFile;
-        if (args.config) {
-            configFile = args.config;
-        } else if (await fsExtra.exists('autoapply.yaml')) {
-            configFile = 'autoapply.yaml';
-        } else if (await fsExtra.exists('autoapply.yml')) {
-            configFile = 'autoapply.yml';
+        if (args.config.startsWith('env:')) {
+            const envvar = args.config.substr('env:'.length);
+            if (!envvar) {
+                throw new Error('empty environment variable name!');
+            }
+            if (!process.env.hasOwnProperty(envvar)) {
+                throw new Error(`environment variable does not exist: ${envvar}`);
+            }
+            config = process.env[envvar];
         } else {
-            logger.error('no configuration file found and none given!');
-            return 1;
+            const content = await fsExtra.readFile(args.config);
+            config = yaml.safeLoad(content);
         }
-        const content = await fsExtra.readFile(configFile);
-        const config = yaml.safeLoad(content);
-        await run(config, args);
+        if (!config) {
+            throw new Error('configuration is empty!');
+        }
     } catch (e) {
         if (args.debug) {
             throw e;
         } else {
             logger.error(e.message || 'unknown error!');
-            return 5;
+            process.exitCode = 5;
+            return;
         }
     }
-    return 0;
+    return run(config, args);
 }
 
 async function run(config, options = {}) {
     if (!config.loop) {
-        throw new Error('invalid configuration!');
+        throw new Error('invalid configuration, loop section missing!');
     }
 
-    if (!config.loop.commands || !config.loop.commands.length) {
-        throw new Error('no loop commands given in the configuration file!');
-    }
+    const init = (config.init ? new Init(config.init) : null);
+    const loop = new Loop(config.loop);
 
-    const sleepSec = parseSleep(config.loop.sleep);
-    const loopOnError = parseOnError(config.loop.onerror, 'continue');
-    const loopCommands = config.loop.commands.map(cmd => new Command(cmd));
+    const ctx = {
+        'running': true
+    };
+    ctx.stop = () => stop(ctx);
 
-    const ctx = {};
-
-    if (!config.server || config.server.enabled !== false) {
+    if (config.server && config.server.enabled === false) {
+        logger.debug('Server is disabled');
+    } else {
         const port = (config.server ? config.server.port : 0) || 3000;
         ctx.server = await startServer(port);
     }
 
-    if (config.init && config.init.commands && config.init.commands.length) {
+    if (init) {
         logger.info('Running init commands...');
-        const initOnError = parseOnError(config.init.onerror, 'fail');
-        const initCommands = config.init.commands.map(cmd => new Command(cmd));
-        await runCommands(initCommands, '.', initOnError, options.debug);
+        await runCommands(init.commands, '.', init.onError, options.debug);
     } else {
         logger.info('No init commands.');
     }
 
     logger.info('Running loop commands...');
-
-    let loop = 1;
-    const loops = options.loops;
-    while (true) {
-        const tmpDir = await tmpPromise.dir();
-        try {
-            await runCommands(loopCommands, tmpDir.path, loopOnError, options.debug);
-        } finally {
-            logger.debug('Deleting directory...');
-            await fsExtra.remove(tmpDir.path);
-        }
-
-        if (loops && ++loop > loops) {
-            break;
-        }
-
-        if (sleepSec) {
-            logger.info(`Sleeping for ${sleepSec}s...`);
-            await sleep(sleepSec * 1000);
-        } else {
-            logger.debug(`Not sleeping (sleep = 0)`);
-        }
-    }
+    ctx.loop = runLoop(loop, options, ctx);
 
     return ctx;
 }
 
-function startServer(port = 3000) {
+function stop(ctx) {
+    ctx.running = false;
+    const stopLoop = ctx.loop.catch((err) => {
+        logger.warn('Error while running loop:', err.message || 'unknown error!');
+    });
+    if (ctx.server) {
+        return new Promise((resolve) => {
+            ctx.server.close((err) => {
+                if (err) {
+                    logger.warn('Could not stop server:', err.message || 'unknown error!');
+                }
+                resolve();
+            });
+        }).then(() => stopLoop);
+    } else {
+        return stopLoop;
+    }
+}
+
+function startServer(port) {
+    logger.debug('Starting server...');
     const server = http.createServer(handleRequest);
     return new Promise((resolve, reject) => {
         server.listen(port, (err) => {
@@ -188,6 +187,31 @@ function handleRequest(request, response) {
     }
 }
 
+async function runLoop(loop, options, ctx) {
+    let cur = 1;
+    const loops = options.loops;
+    while (ctx.running) {
+        const tmpDir = await tmpPromise.dir();
+        try {
+            await runCommands(loop.commands, tmpDir.path, loop.onError, options.debug);
+        } finally {
+            logger.debug('Deleting directory...');
+            await fsExtra.remove(tmpDir.path);
+        }
+
+        if (loops && ++cur > loops) {
+            break;
+        }
+
+        if (loop.sleep) {
+            logger.info(`Sleeping for ${loop.sleep}s...`);
+            await sleep(loop.sleep * 1000);
+        } else {
+            logger.debug(`Not sleeping (sleep = 0)`);
+        }
+    }
+}
+
 async function runCommands(commands, cwd, onerror, debug) {
     logger.debug('Executing in directory:', cwd);
     for (const command of commands) {
@@ -223,6 +247,27 @@ async function runCommands(commands, cwd, onerror, debug) {
     }
 }
 
+class Init {
+    constructor(init) {
+        if (!init.commands || !init.commands.length) {
+            throw new Error('no init commands given!');
+        }
+        this.onError = parseOnError(init.onerror, 'fail');
+        this.commands = init.commands.map((cmd) => new Command(cmd));
+    }
+}
+
+class Loop {
+    constructor(loop) {
+        if (!loop.commands || !loop.commands.length) {
+            throw new Error('no loop commands given!');
+        }
+        this.sleep = parseSleep(loop.sleep);
+        this.onError = parseOnError(loop.onerror, 'continue');
+        this.commands = loop.commands.map((cmd) => new Command(cmd));
+    }
+}
+
 class Command {
     constructor(command) {
         if (isObject(command)) {
@@ -237,11 +282,16 @@ class Command {
         if (typeof this.command === 'string') {
             this.command = this.command.trim();
             if (!this.command) {
-                throw new Error(`invalid command: ${this.command}`);
+                throw new Error('command is empty!');
             }
         } else if (Array.isArray(this.command)) {
             if (!this.command.length || !this.command[0]) {
                 throw new Error(`invalid command: ${this.command}`);
+            }
+            for (let i = 0; i < this.command.length; i++) {
+                if (typeof this.command[i] !== 'string') {
+                    throw new Error(`invalid command: ${this.command}`);
+                }
             }
         } else {
             throw new Error(`invalid command: ${this.command}`);
@@ -267,10 +317,10 @@ class Command {
 
         const childProcess = promise.childProcess;
         if (this.stdout === 'pipe') {
-            childProcess.stdout.on('data', data => process.stdout.write(data));
+            childProcess.stdout.on('data', (data) => process.stdout.write(data));
         }
         if (this.stderr === 'pipe') {
-            childProcess.stderr.on('data', data => process.stderr.write(data));
+            childProcess.stderr.on('data', (data) => process.stderr.write(data));
         }
 
         return promise;
@@ -318,12 +368,16 @@ function parseStdio(value) {
 }
 
 function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 module.exports.logger = logger;
+module.exports.main = main;
 module.exports.run = run;
 
 if (require.main === module) {
-    main().then(status => process.exit(status)).catch(err => console.log(err));
+    main().catch((err) => {
+        process.exitCode = 1;
+        console.error(err);
+    });
 }

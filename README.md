@@ -17,7 +17,7 @@ To start the service locally, run
 For a docker version, use
 
     $ vim autoapply.yaml
-    $ docker run --detach -v $(pwd)/autoapply.yaml:/home/autoapply/autoapply.yaml pascalgn/autoapply
+    $ docker run --detach -v $(pwd)/autoapply.yaml:/home/autoapply/autoapply.yaml pascalgn/autoapply autoapply.yaml
 
 ## Configuration
 

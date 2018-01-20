@@ -11,9 +11,11 @@
     "es6": true
   },
   "rules": {
+    "max-len": ["error", 100],
     "semi": "error",
     "no-tabs": "error",
     "no-console": "off",
-    "no-constant-condition": "off"
+    "no-constant-condition": "off",
+    "arrow-parens": "error"
   }
 }

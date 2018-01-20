@@ -8,11 +8,35 @@ const expect = chai.expect;
 chai.use(chaiAsPromised);
 chai.use(chaiHttp);
 
+const path = require('path');
+const yaml = require('js-yaml');
+const tmp = require('tmp');
+const fsExtra = require('fs-extra');
+
 const autoapply = require('../bin/autoapply');
 
 autoapply.logger.level = -1;
 
 describe('autoapply', () => {
+    it('should execute the commands given in the config file', () => {
+        const d = tmp.dirSync();
+        try {
+            const config = {
+                'loop': {
+                    'commands': [
+                        ['true']
+                    ],
+                    'sleep': 0.01
+                }
+            };
+            const configFile = path.join(d.name, 'config.yaml');
+            fsExtra.writeFileSync(configFile, yaml.safeDump(config));
+            return autoapply.main([configFile]).then((ctx) => ctx.stop());
+        } finally {
+            fsExtra.removeSync(d.name);
+        }
+    });
+
     it('should fail when an invalid onerror is given', () => {
         const config = {
             'loop': {
@@ -30,7 +54,8 @@ describe('autoapply', () => {
                 'sleep': 'x'
             }
         };
-        return expect(autoapply.run(config, { 'loops': 1 })).to.be.rejectedWith(Error, 'invalid sleep value: x');
+        return expect(autoapply.run(config, { 'loops': 1 })).to.be.rejectedWith(Error,
+            'invalid sleep value: x');
     });
 
     it('should fail when an invalid stdout is given', () => {
@@ -44,11 +69,13 @@ describe('autoapply', () => {
                 ]
             }
         };
-        return expect(autoapply.run(config, { 'loops': 1 })).to.be.rejectedWith(Error, 'invalid stdio');
+        return expect(autoapply.run(config, { 'loops': 1 })).to.be.rejectedWith(Error,
+            'invalid stdio');
     });
 
     it('should fail when no commands are given', () => {
-        return expect(autoapply.run({})).to.be.rejectedWith(Error, 'invalid configuration!');
+        return expect(autoapply.run({})).to.be.rejectedWith(Error,
+            'invalid configuration, loop section missing!');
     });
 
     it('should fail when an empty command is given', () => {
@@ -66,7 +93,7 @@ describe('autoapply', () => {
                 'commands': [' ']
             }
         };
-        return expect(autoapply.run(config)).to.be.rejectedWith(Error, 'invalid command: ');
+        return expect(autoapply.run(config)).to.be.rejectedWith(Error, 'command is empty!');
     });
 
     it('should fail when an invalid command object is given', () => {
@@ -75,7 +102,8 @@ describe('autoapply', () => {
                 'commands': [{}]
             }
         };
-        return expect(autoapply.run(config)).to.be.rejectedWith(Error, 'invalid command: undefined');
+        return expect(autoapply.run(config)).to.be.rejectedWith(Error,
+            'invalid command: undefined');
     });
 
     it('should fail when the initialization fails', () => {
@@ -118,7 +146,7 @@ describe('autoapply', () => {
                 ]
             }
         };
-        return autoapply.run(config, { 'loops': 1 });
+        return autoapply.run(config, { 'loops': 1 }).then((ctx) => ctx.loop);
     });
 
     it('should use the default sleep value', () => {
@@ -136,7 +164,7 @@ describe('autoapply', () => {
                 ]
             }
         };
-        return autoapply.run(config, { 'loops': 1 });
+        return autoapply.run(config, { 'loops': 1 }).then((ctx) => ctx.loop);
     });
 
     it('should sleep when executing the commands', () => {
@@ -155,7 +183,7 @@ describe('autoapply', () => {
                 ]
             }
         };
-        return autoapply.run(config, { 'loops': 2 });
+        return autoapply.run(config, { 'loops': 2 }).then((ctx) => ctx.loop);
     });
 
     it('should throw an error when the command does not exist', () => {
@@ -173,10 +201,11 @@ describe('autoapply', () => {
                 ]
             }
         };
-        return expect(autoapply.run(config, { 'loops': 1 })).to.be.rejectedWith(Error, /nonexistingcommand/);
+        return autoapply.run(config, { 'loops': 1 }).then((ctx) =>
+            expect(ctx.loop).to.be.rejectedWith(Error, /nonexistingcommand/));
     });
 
-    it('should provide a /healthz endpoint', done => {
+    it('should provide a /healthz endpoint', (done) => {
         const config = {
             'server': {
                 'enabled': true,
@@ -184,20 +213,52 @@ describe('autoapply', () => {
             },
             'loop': {
                 'commands': [
-                    {
-                        'command': ['date'],
-                        'stdout': 'ignore'
-                    }
+                    ['true']
                 ]
             }
         };
 
-        autoapply.run(config, { 'loops': 1 }).then(ctx => {
+        autoapply.run(config, { 'loops': 1 }).then((ctx) => {
             chai.request('http://localhost:3001').get('/healthz').end((err, res) => {
                 expect(res).to.have.status(200);
                 expect(res.text).to.equal('OK');
-                ctx.server.close();
-                done();
+                ctx.stop().then(done);
+            });
+        });
+    });
+
+    it('should return 404 for unknown URLs', (done) => {
+        const config = {
+            'loop': {
+                'commands': [
+                    ['true']
+                ]
+            }
+        };
+
+        autoapply.run(config, { 'loops': 1 }).then((ctx) => {
+            chai.request('http://localhost:3000').get('/123').end((err, res) => {
+                expect(res).to.have.status(404);
+                expect(res.text).to.equal('Not found!');
+                ctx.stop().then(done);
+            });
+        });
+    });
+
+    it('should return 405 for unknown methods', (done) => {
+        const config = {
+            'loop': {
+                'commands': [
+                    ['true']
+                ]
+            }
+        };
+
+        autoapply.run(config, { 'loops': 1 }).then((ctx) => {
+            chai.request('http://localhost:3000').put('/healthz').end((err, res) => {
+                expect(res).to.have.status(405);
+                expect(res.text).to.equal('Only GET or HEAD supported!');
+                ctx.stop().then(done);
             });
         });
     });

@@ -11,6 +11,7 @@ spec:
       containers:
         - name: autoapply
           image: pascalgn/autoapply
+          args: ["env:AUTOAPPLY_CONFIG"]
           env:
             - name: AUTOAPPLY_CONFIG
               value: |

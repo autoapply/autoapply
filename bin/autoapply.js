@@ -72,15 +72,15 @@ async function main(argv = null) {
         }
     } catch (e) {
         if (args.debug) {
-            throw e;
+            throw new DebugError(e);
         } else {
-            logger.error(e.message || 'unknown error!');
-            process.exitCode = 5;
-            return;
+            throw e;
         }
     }
     return run(config, args);
 }
+
+class DebugError extends Error { }
 
 async function run(config, options = {}) {
     if (!config.loop) {
@@ -378,6 +378,10 @@ module.exports.run = run;
 if (require.main === module) {
     main().catch((err) => {
         process.exitCode = 1;
-        console.error(err);
+        if (err instanceof DebugError) {
+            logger.error(err.stack);
+        } else {
+            logger.error(err.message || 'unknown error!');
+        }
     });
 }

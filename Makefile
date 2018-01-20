@@ -10,7 +10,7 @@ upload: tests
 	yarn publish
 
 docker: tests
-	docker build -t $(IMAGE_NAME) build/
+	docker build -t $(IMAGE_NAME) .
 
 docker-push: docker
 	docker push $(IMAGE_NAME)

@@ -12,7 +12,6 @@ RUN apk add --no-cache curl git openssh-client tar \
 
 RUN yarn global add yaml-crypt
 
-COPY autoapply.sh /usr/local/bin/autoapply.sh
 RUN yarn global add 'autoapply@0.5.5'
 
 USER autoapply

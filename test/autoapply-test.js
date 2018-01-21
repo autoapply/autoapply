@@ -20,21 +20,19 @@ autoapply.logger.level = -1;
 describe('autoapply', () => {
     it('should execute the commands given in the config file', () => {
         const d = tmp.dirSync();
-        try {
-            const config = {
-                'loop': {
-                    'commands': [
-                        ['true']
-                    ],
-                    'sleep': 0.01
-                }
-            };
-            const configFile = path.join(d.name, 'config.yaml');
-            fsExtra.writeFileSync(configFile, yaml.safeDump(config));
-            return autoapply.main([configFile]).then((ctx) => ctx.stop());
-        } finally {
-            fsExtra.removeSync(d.name);
-        }
+        const config = {
+            'loop': {
+                'commands': [
+                    ['true']
+                ],
+                'sleep': 0.01
+            }
+        };
+        const configFile = path.join(d.name, 'config.yaml');
+        fsExtra.writeFileSync(configFile, yaml.safeDump(config));
+        return autoapply.main([configFile])
+            .then((ctx) => ctx.stop())
+            .then(() => fsExtra.removeSync(d.name));
     });
 
     it('should fail when an invalid onerror is given', () => {

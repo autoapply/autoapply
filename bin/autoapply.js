@@ -77,7 +77,7 @@ async function main(argv = null) {
             throw e;
         }
     }
-    return run(config, args);
+    return run(config, args).then((ctx) => { catchLoops(ctx); return ctx; });
 }
 
 class DebugError extends Error { }
@@ -102,16 +102,16 @@ async function run(config, options = {}) {
 
     ctx.stop = () => stop(ctx);
 
-    if (config.server && config.server.enabled === false) {
-        logger.debug('Server is disabled');
-    } else {
+    if (config.server && config.server.enabled !== false) {
         const port = (config.server ? config.server.port : 0) || 3000;
         ctx.server = await startServer(port);
+    } else {
+        logger.debug('Server is disabled');
     }
 
     if (init) {
         logger.info('Running init commands...');
-        await runCommands(init.commands, '.', init.onError, options.debug);
+        await runCommands(init.commands, init.cwd, init.onError, options.debug);
     } else {
         logger.info('No init commands.');
     }
@@ -124,9 +124,6 @@ async function run(config, options = {}) {
 
 function stop(ctx) {
     ctx.running = false;
-    const stopLoops = Promise.all(ctx.loops.map((loop) => loop.catch((err) => {
-        logger.warn('Error while running loop:', err.message || 'unknown error!');
-    })));
     if (ctx.server) {
         return new Promise((resolve) => {
             ctx.server.close((err) => {
@@ -135,10 +132,16 @@ function stop(ctx) {
                 }
                 resolve();
             });
-        }).then(() => stopLoops);
+        }).then(() => catchLoops(ctx));
     } else {
-        return stopLoops;
+        return catchLoops(ctx);
     }
+}
+
+function catchLoops(ctx) {
+    return Promise.all(ctx.loops.map((loop) => loop.catch((err) => {
+        logger.warn('Error while running loop:', err.message || 'unknown error!');
+    })));
 }
 
 function startServer(port) {
@@ -198,12 +201,16 @@ async function runLoop(loop, options, ctx) {
     let cur = 1;
     const loops = options.loops;
     while (ctx.running) {
-        const tmpDir = await tmpPromise.dir();
-        try {
-            await runCommands(loop.commands, tmpDir.path, loop.onError, options.debug);
-        } finally {
-            logger.debug('Deleting directory...');
-            await fsExtra.remove(tmpDir.path);
+        if (loop.cwd) {
+            await runCommands(loop.commands, loop.cwd, loop.onError, options.debug);
+        } else {
+            const tmpDir = await tmpPromise.dir();
+            try {
+                await runCommands(loop.commands, tmpDir.path, loop.onError, options.debug);
+            } finally {
+                logger.debug('Deleting directory...');
+                await fsExtra.remove(tmpDir.path);
+            }
         }
 
         if (loops && ++cur > loops) {
@@ -267,6 +274,7 @@ class Init {
         if (!init.commands || !init.commands.length) {
             throw new Error('no init commands given!');
         }
+        this.cwd = init.cwd || '.';
         this.onError = parseOnError(init.onerror, 'fail');
         this.commands = init.commands.map((cmd) => new Command(cmd));
     }
@@ -277,6 +285,7 @@ class Loop {
         if (!loop.commands || !loop.commands.length) {
             throw new Error('no loop commands given!');
         }
+        this.cwd = loop.cwd || null;
         this.sleep = parseSleep(loop.sleep);
         this.onError = parseOnError(loop.onerror, 'continue');
         this.commands = loop.commands.map((cmd) => new Command(cmd));

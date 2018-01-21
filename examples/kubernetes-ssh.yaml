@@ -41,6 +41,8 @@ spec:
                   commands:
                     - git clone --depth 1 git@github.com:pascalgn/hostinfo
                     - kubectl apply -f hostinfo/examples/kubernetes.yaml
+                server:
+                  enabled: true
           ports:
             - containerPort: 3000
               name: http

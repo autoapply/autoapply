@@ -1,12 +1,15 @@
 # optional section, configuring the internal HTTP server
 server:
-  # set this to false if you do not want any server running
-  enabled: true
+  # set this to true if you want to have the HTTP server running
+  enabled: false
   # the HTTP port that the server will listen on, default is 3000
   port: 3000
 
 # optional section, defining any commands that should be executed on startup
 init:
+  # directory in which to execute the commands (working directory)
+  # if unset, the directory in which autoapply was started will be used
+  cwd: '.'
   # list of commands that should be run on startup
   commands:
   # the simple string form will use the shell,
@@ -27,6 +30,9 @@ init:
 
 # required section, defining loop commands
 loop:
+  # directory in which to execute the commands (working directory)
+  # if unset, a new temporary directory will be created for each loop iteration
+  cwd: '/tmp'
   # time to wait (in seconds) between each iteration
   # a value of 0 disables sleeping, default is 60 (1 minute)
   sleep: 60

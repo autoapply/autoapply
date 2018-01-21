@@ -106,9 +106,6 @@ describe('autoapply', () => {
 
     it('should fail when the initialization fails', () => {
         const config = {
-            'server': {
-                'enabled': false
-            },
             'init': {
                 'commands': [
                     {
@@ -126,9 +123,6 @@ describe('autoapply', () => {
 
     it('should execute the given commands', () => {
         const config = {
-            'server': {
-                'enabled': false
-            },
             'loop': {
                 'onerror': 'fail',
                 'sleep': 0,
@@ -149,9 +143,6 @@ describe('autoapply', () => {
 
     it('should execute multiple loops', () => {
         const config = {
-            'server': {
-                'enabled': false
-            },
             'loop': [
                 {
                     'commands': [
@@ -168,11 +159,51 @@ describe('autoapply', () => {
         return autoapply.run(config, { 'loops': 1 }).then((ctx) => ctx.stop());
     });
 
+    it('should execute the initializations in the given directory', () => {
+        const d = tmp.dirSync();
+        fsExtra.writeFileSync(path.join(d.name, 'file1'), '');
+
+        const config = {
+            'init': {
+                'cwd': d.name,
+                'commands': [
+                    'ls file1 >/dev/null'
+                ]
+            },
+            'loop': {
+                'commands': [
+                    ['true']
+                ]
+            }
+        };
+
+        return autoapply.run(config, { 'loops': 1 })
+            .then((ctx) => ctx.stop())
+            .then(() => fsExtra.removeSync(d.name));
+    });
+
+    it('should execute the commands in the given directory', () => {
+        const d = tmp.dirSync();
+        fsExtra.writeFileSync(path.join(d.name, 'file1'), '');
+
+        const config = {
+            'loop': {
+                'cwd': d.name,
+                'onerror': 'fail',
+                'commands': [
+                    'ls file1 >/dev/null'
+                ],
+                'sleep': 0.01
+            }
+        };
+
+        return autoapply.run(config, { 'loops': 1 })
+            .then((ctx) => Promise.all(ctx.loops))
+            .then(() => fsExtra.removeSync(d.name));
+    });
+
     it('should use the default sleep value', () => {
         const config = {
-            'server': {
-                'enabled': false
-            },
             'loop': {
                 'sleep': '-0.3',
                 'commands': [
@@ -188,9 +219,6 @@ describe('autoapply', () => {
 
     it('should sleep when executing the commands', () => {
         const config = {
-            'server': {
-                'enabled': false
-            },
             'loop': {
                 'sleep': '0.01',
                 'onerror': 'continue',
@@ -207,9 +235,6 @@ describe('autoapply', () => {
 
     it('should throw an error when the command does not exist', () => {
         const config = {
-            'server': {
-                'enabled': false
-            },
             'loop': {
                 'onerror': 'fail',
                 'commands': [
@@ -248,6 +273,9 @@ describe('autoapply', () => {
 
     it('should return 404 for unknown URLs', (done) => {
         const config = {
+            'server': {
+                'enabled': true
+            },
             'loop': {
                 'commands': [
                     ['true']
@@ -266,6 +294,9 @@ describe('autoapply', () => {
 
     it('should return 405 for unknown methods', (done) => {
         const config = {
+            'server': {
+                'enabled': true
+            },
             'loop': {
                 'commands': [
                     ['true']

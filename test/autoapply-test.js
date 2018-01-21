@@ -144,7 +144,28 @@ describe('autoapply', () => {
                 ]
             }
         };
-        return autoapply.run(config, { 'loops': 1 }).then((ctx) => ctx.loop);
+        return autoapply.run(config, { 'loops': 1 }).then((ctx) => ctx.stop());
+    });
+
+    it('should execute multiple loops', () => {
+        const config = {
+            'server': {
+                'enabled': false
+            },
+            'loop': [
+                {
+                    'commands': [
+                        ['true']
+                    ]
+                },
+                {
+                    'commands': [
+                        ['true']
+                    ]
+                }
+            ]
+        };
+        return autoapply.run(config, { 'loops': 1 }).then((ctx) => ctx.stop());
     });
 
     it('should use the default sleep value', () => {
@@ -200,7 +221,7 @@ describe('autoapply', () => {
             }
         };
         return autoapply.run(config, { 'loops': 1 }).then((ctx) =>
-            expect(ctx.loop).to.be.rejectedWith(Error, /nonexistingcommand/));
+            expect(ctx.loops[0]).to.be.rejectedWith(Error, /nonexistingcommand/));
     });
 
     it('should provide a /healthz endpoint', (done) => {
@@ -220,7 +241,7 @@ describe('autoapply', () => {
             chai.request('http://localhost:3001').get('/healthz').end((err, res) => {
                 expect(res).to.have.status(200);
                 expect(res.text).to.equal('OK');
-                ctx.stop().then(done);
+                ctx.stop().then(() => done());
             });
         });
     });
@@ -238,7 +259,7 @@ describe('autoapply', () => {
             chai.request('http://localhost:3000').get('/123').end((err, res) => {
                 expect(res).to.have.status(404);
                 expect(res.text).to.equal('Not found!');
-                ctx.stop().then(done);
+                ctx.stop().then(() => done());
             });
         });
     });
@@ -256,7 +277,7 @@ describe('autoapply', () => {
             chai.request('http://localhost:3000').put('/healthz').end((err, res) => {
                 expect(res).to.have.status(405);
                 expect(res.text).to.equal('Only GET or HEAD supported!');
-                ctx.stop().then(done);
+                ctx.stop().then(() => done());
             });
         });
     });

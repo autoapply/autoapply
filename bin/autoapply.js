@@ -83,16 +83,23 @@ async function main(argv = null) {
 class DebugError extends Error { }
 
 async function run(config, options = {}) {
-    if (!config.loop) {
-        throw new Error('invalid configuration, loop section missing!');
-    }
+    const ctx = {
+        'running': true,
+        'loops': [],
+        'server': null
+    };
 
     const init = (config.init ? new Init(config.init) : null);
-    const loop = new Loop(config.loop);
 
-    const ctx = {
-        'running': true
-    };
+    const loops = [];
+    if (!config.loop) {
+        throw new Error('invalid configuration, loop section missing!');
+    } else if (Array.isArray(config.loop)) {
+        config.loop.forEach((loop) => loops.push(new Loop(loop)));
+    } else {
+        loops.push(new Loop(config.loop));
+    }
+
     ctx.stop = () => stop(ctx);
 
     if (config.server && config.server.enabled === false) {
@@ -110,16 +117,16 @@ async function run(config, options = {}) {
     }
 
     logger.info('Running loop commands...');
-    ctx.loop = runLoop(loop, options, ctx);
+    ctx.loops = loops.map((loop) => runLoop(loop, options, ctx));
 
     return ctx;
 }
 
 function stop(ctx) {
     ctx.running = false;
-    const stopLoop = ctx.loop.catch((err) => {
+    const stopLoops = Promise.all(ctx.loops.map((loop) => loop.catch((err) => {
         logger.warn('Error while running loop:', err.message || 'unknown error!');
-    });
+    })));
     if (ctx.server) {
         return new Promise((resolve) => {
             ctx.server.close((err) => {
@@ -128,9 +135,9 @@ function stop(ctx) {
                 }
                 resolve();
             });
-        }).then(() => stopLoop);
+        }).then(() => stopLoops);
     } else {
-        return stopLoop;
+        return stopLoops;
     }
 }
 
@@ -212,6 +219,14 @@ async function runLoop(loop, options, ctx) {
     }
 }
 
+/**
+ * Run the given commands, one at a time
+ *
+ * @param {Command[]} commands 
+ * @param {string} cwd 
+ * @param {string} onerror 
+ * @param {boolean} debug 
+ */
 async function runCommands(commands, cwd, onerror, debug) {
     logger.debug('Executing in directory:', cwd);
     for (const command of commands) {

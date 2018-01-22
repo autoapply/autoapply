@@ -100,7 +100,15 @@ async function run(config, options = {}) {
         loops.push(new Loop(config.loop));
     }
 
+    if (loops.length === 1) {
+        loops[0].name = 'Loop';
+    } else {
+        loops.forEach((loop, idx) => loop.name = `Loop ${idx + 1}`);
+    }
+
     ctx.stop = () => stop(ctx);
+
+    setupSignalHandler(ctx);
 
     if (config.server && config.server.enabled !== false) {
         const port = (config.server ? config.server.port : 0) || 3000;
@@ -111,7 +119,7 @@ async function run(config, options = {}) {
 
     if (init) {
         logger.info('Running init commands...');
-        await runCommands(init.commands, init.cwd, init.onError, options.debug);
+        await runCommands(init.commands, init.cwd, init.onError, options.debug, 'Init: ', ctx);
     } else {
         logger.info('No init commands.');
     }
@@ -122,20 +130,40 @@ async function run(config, options = {}) {
     return ctx;
 }
 
+function setupSignalHandler(ctx) {
+    const track = { 'time': 0 };
+    process.on('SIGINT', () => {
+        const now = new Date().getTime();
+        if ((now - track.time) > 5000) {
+            logger.info('Signal SIGINT received, shutting down...');
+            stop(ctx).catch((err) => {
+                logger.error('Failed to shut down:', err.message || 'unknown error!');
+            }).then(() => logger.info('Exiting.'));
+        } else {
+            logger.info('Exiting.');
+            process.exit();
+        }
+        track.time = now;
+    });
+}
+
 function stop(ctx) {
     ctx.running = false;
+    let promise;
     if (ctx.server) {
-        return new Promise((resolve) => {
+        promise = new Promise((resolve) => {
             ctx.server.close((err) => {
                 if (err) {
                     logger.warn('Could not stop server:', err.message || 'unknown error!');
                 }
                 resolve();
             });
-        }).then(() => catchLoops(ctx));
+        });
     } else {
-        return catchLoops(ctx);
+        promise = Promise.resolve();
     }
+    const removeListeners = () => process.removeAllListeners('SIGINT');
+    return promise.then(() => catchLoops(ctx)).then(removeListeners, removeListeners);
 }
 
 function catchLoops(ctx) {
@@ -198,17 +226,20 @@ function handleRequest(request, response) {
 }
 
 async function runLoop(loop, options, ctx) {
+    const prefix = (loop.name ? `${loop.name}: ` : '');
     let cur = 1;
     const loops = options.loops;
     while (ctx.running) {
         if (loop.cwd) {
-            await runCommands(loop.commands, loop.cwd, loop.onError, options.debug);
+            await runCommands(loop.commands, loop.cwd, loop.onError,
+                options.debug, prefix, ctx);
         } else {
             const tmpDir = await tmpPromise.dir();
             try {
-                await runCommands(loop.commands, tmpDir.path, loop.onError, options.debug);
+                await runCommands(loop.commands, tmpDir.path, loop.onError,
+                    options.debug, prefix, ctx);
             } finally {
-                logger.debug('Deleting directory...');
+                logger.debug(`${prefix}Deleting directory...`);
                 await fsExtra.remove(tmpDir.path);
             }
         }
@@ -218,10 +249,10 @@ async function runLoop(loop, options, ctx) {
         }
 
         if (loop.sleep) {
-            logger.info(`Sleeping for ${loop.sleep}s...`);
+            logger.info(`${prefix}Sleeping for ${loop.sleep}s...`);
             await sleep(loop.sleep * 1000);
         } else {
-            logger.debug(`Not sleeping (sleep = 0)`);
+            logger.debug(`${prefix}Not sleeping (sleep = 0)`);
         }
     }
 }
@@ -234,9 +265,13 @@ async function runLoop(loop, options, ctx) {
  * @param {string} onerror 
  * @param {boolean} debug 
  */
-async function runCommands(commands, cwd, onerror, debug) {
+async function runCommands(commands, cwd, onerror, debug, prefix, ctx) {
     logger.debug('Executing in directory:', cwd);
     for (const command of commands) {
+        if (!ctx.running) {
+            break;
+        }
+        logger.info(`${prefix}Executing command:`, JSON.stringify(command.command));
         try {
             await command.run(cwd);
         } catch (e) {
@@ -312,8 +347,8 @@ class Command {
             if (!this.command.length || !this.command[0]) {
                 throw new Error(`invalid command: ${this.command}`);
             }
-            for (let i = 0; i < this.command.length; i++) {
-                if (typeof this.command[i] !== 'string') {
+            for (const cmd of this.command) {
+                if (typeof cmd !== 'string') {
                     throw new Error(`invalid command: ${this.command}`);
                 }
             }
@@ -323,8 +358,6 @@ class Command {
     }
 
     run(cwd) {
-        logger.info('Executing command:', JSON.stringify(this.command));
-
         const shell = (typeof this.command === 'string');
         const options = {
             'cwd': cwd,

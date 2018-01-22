@@ -1,4 +1,8 @@
-FROM pascalgn/autoapply:latest
+FROM node:9.4.0-alpine
+
+RUN adduser -D -g autoapply autoapply
+
+RUN yarn global add 'autoapply@0.6.1'
 
 RUN apk add --no-cache curl git openssh-client tar \
     && rm -rf /root/.cache \
@@ -11,3 +15,8 @@ RUN curl --fail "${KUBECTL_URL}" > /usr/local/bin/kubectl \
     && chmod +x /usr/local/bin/kubectl
 
 RUN yarn global add forever yaml-crypt slack-cli gatsby-cli hexo-cli
+
+USER autoapply
+WORKDIR /home/autoapply
+
+ENTRYPOINT [ "autoapply" ]

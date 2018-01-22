@@ -1,6 +1,5 @@
 .*
 !.gitignore
-!.dockerignore
 !.eslintrc.json
 !.travis.yml
 

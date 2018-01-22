@@ -1,5 +1,3 @@
-IMAGE_NAME=pascalgn/autoapply:latest
-
 all: tests
 
 tests:
@@ -8,9 +6,3 @@ tests:
 
 upload: tests
 	yarn publish
-
-docker: tests
-	docker build -t $(IMAGE_NAME) .
-
-docker-push: docker
-	docker push $(IMAGE_NAME)

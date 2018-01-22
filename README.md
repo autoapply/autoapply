@@ -2,13 +2,22 @@
 
 [![Build Status](https://img.shields.io/travis/pascalgn/autoapply.svg?style=flat-square)](https://travis-ci.org/pascalgn/autoapply)
 [![Coverage status](https://img.shields.io/coveralls/github/pascalgn/autoapply.svg?style=flat-square)](https://coveralls.io/github/pascalgn/autoapply)
+[![Docker build status](https://img.shields.io/docker/build/pascalgn/autoapply.svg?style=flat-square)](https://hub.docker.com/r/pascalgn/autoapply/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/pascalgn/autoapply/blob/master/LICENSE)
 
-Automatically apply changes to a Kubernetes cluster.
+Run scripts in a Kubernetes cluster with as little setup as possible.
+
+## Examples
+
+- Automatically apply changes from a Git repository to the Kubernetes cluster
+  ([kubernetes-simple.yaml](examples/kubernetes-simple.yaml))
+- Serve a static [Gatsby](https://www.gatsbyjs.org/) site, watching repository changes
+  ([gatsby-hello-world.yaml](examples/gatsby-hello-world.yaml))
+- [...](examples/)
 
 ## Usage
 
-To start the service locally, run
+To start autoapply locally, run
 
     $ yarn global add autoapply
     $ vim autoapply.yaml
@@ -18,6 +27,11 @@ For a docker version, use
 
     $ vim autoapply.yaml
     $ docker run --detach -v $(pwd)/autoapply.yaml:/home/autoapply/autoapply.yaml pascalgn/autoapply autoapply.yaml
+
+## Docker images
+
+* `latest` provides a minimal image with just *autoapply* installed ([Dockerfile](build/Dockerfile))
+* `extra` also provides additional tools like *git* and *kubectl* ([Dockerfile](build/extra/Dockerfile))
 
 ## Configuration
 

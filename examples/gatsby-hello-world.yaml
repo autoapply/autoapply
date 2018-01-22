@@ -1,0 +1,52 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: gatsby
+spec:
+  template:
+    metadata:
+      labels:
+        app: gatsby
+    spec:
+      containers:
+        - name: gatsby
+          image: pascalgn/autoapply:extra
+          args: ["env:AUTOAPPLY_CONFIG"]
+          env:
+            - name: AUTOAPPLY_CONFIG
+              value: |
+                # During initialization, the gatsby command is installed and
+                # the repository that we want to serve is downloaded
+                init:
+                  commands:
+                    - git clone https://github.com/gatsbyjs/gatsby-starter-hello-world
+                    - cd gatsby-starter-hello-world && yarn && gatsby build
+                loop:
+                # The first loop executes 'git pull' every 60s (default),
+                # to get the latest changes from the repository
+                - cwd: gatsby-starter-hello-world
+                  commands:
+                    - git pull | grep -v 'Already up-to-date.'
+                    - gatsby build
+                # The second loop just runs the gatsby server, which will handle
+                # requests on port 9000 by default
+                - cwd: gatsby-starter-hello-world
+                  commands:
+                    - gatsby serve
+          ports:
+            - containerPort: 9000
+              name: http-port
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gatsby
+  labels:
+    app: gatsby
+spec:
+  type: LoadBalancer
+  selector:
+    app: gatsby
+  ports:
+    - port: 80
+      targetPort: http-port

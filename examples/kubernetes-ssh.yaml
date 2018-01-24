@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: autoapply
-          image: pascalgn/autoapply:extra
+          image: pascalgn/autoapply:kubectl
           args: ["env:AUTOAPPLY_CONFIG"]
           envFrom:
             - secretRef:
@@ -34,6 +34,7 @@ spec:
                   # in ~/.ssh with the correct restrictive permissions (only readable by user)
                   commands:
                     - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+                    - ssh-keyscan -t rsa github.com > ~/.ssh/known_hosts
                     - echo "${id_rsa}" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
                     - echo "${id_rsa.pub}" > ~/.ssh/id_rsa.pub
                 loop:

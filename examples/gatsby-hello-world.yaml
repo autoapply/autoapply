@@ -10,7 +10,7 @@ spec:
     spec:
       containers:
         - name: gatsby
-          image: pascalgn/autoapply:extra
+          image: pascalgn/autoapply:latest
           args: ["env:AUTOAPPLY_CONFIG"]
           env:
             - name: AUTOAPPLY_CONFIG
@@ -20,19 +20,19 @@ spec:
                 init:
                   commands:
                     - git clone https://github.com/gatsbyjs/gatsby-starter-hello-world
-                    - cd gatsby-starter-hello-world && yarn && gatsby build
+                    - cd gatsby-starter-hello-world && yarn && ./node_modules/.bin/gatsby build
                 loop:
-                # The first loop executes 'git pull' every 60s (default),
-                # to get the latest changes from the repository
-                - cwd: gatsby-starter-hello-world
-                  commands:
-                    - git pull | grep -v 'Already up-to-date.'
-                    - gatsby build
-                # The second loop just runs the gatsby server, which will handle
-                # requests on port 9000 by default
-                - cwd: gatsby-starter-hello-world
-                  commands:
-                    - gatsby serve
+                  # The first loop executes 'git pull' every 60s (default)
+                  # to get the latest changes from the repository
+                  - cwd: gatsby-starter-hello-world
+                    commands:
+                      - git pull | grep -v 'Already up-to-date.'
+                      - ./node_modules/.bin/gatsby build
+                  # The second loop just runs the gatsby server, which will handle
+                  # requests on port 9000 by default
+                  - cwd: gatsby-starter-hello-world
+                    commands:
+                      - ./node_modules/.bin/gatsby serve
           ports:
             - containerPort: 9000
               name: http-port

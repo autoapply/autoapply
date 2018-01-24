@@ -1,0 +1,41 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: jekyll
+spec:
+  template:
+    metadata:
+      labels:
+        app: jekyll
+    spec:
+      containers:
+        - name: jekyll
+          image: pascalgn/autoapply:jekyll
+          args: ["env:AUTOAPPLY_CONFIG"]
+          env:
+            - name: AUTOAPPLY_CONFIG
+              value: |
+                init:
+                  commands:
+                    - jekyll new hello-world
+                loop:
+                  - cwd: hello-world
+                    commands:
+                      - bundle exec jekyll serve -H 0.0.0.0
+          ports:
+            - containerPort: 4000
+              name: http-port
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jekyll
+  labels:
+    app: jekyll
+spec:
+  type: LoadBalancer
+  selector:
+    app: jekyll
+  ports:
+    - port: 80
+      targetPort: http-port

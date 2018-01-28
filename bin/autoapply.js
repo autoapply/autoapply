@@ -62,13 +62,16 @@ async function main(argv = null) {
             if (!process.env.hasOwnProperty(envvar)) {
                 throw new Error(`environment variable does not exist: ${envvar}`);
             }
-            config = process.env[envvar];
+            config = yaml.safeLoad(process.env[envvar]);
         } else {
             const content = await fsExtra.readFile(args.config);
             config = yaml.safeLoad(content);
         }
         if (!config) {
             throw new Error('configuration is empty!');
+        }
+        if (args.debug) {
+            logger.debug('Loaded configuration:', JSON.stringify(config, null, 2));
         }
     } catch (e) {
         if (args.debug) {

@@ -5,9 +5,8 @@ metadata:
 type: Opaque
 data:
   # replace these secrets with your own generated SSH keys! To create this secret, use:
-  # kubectl create secret generic autoapply-ssh-secret --dry-run --from-file=id_rsa,id_rsa.pub -o yaml
+  # kubectl create secret generic autoapply-ssh-secret --dry-run --from-file=id_rsa -o yaml
   id_rsa: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQ...
-  id_rsa.pub: c3NoLXJzYSBBQUFBQjNOemFDMXljMkVBQUFBRE...
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -22,7 +21,7 @@ spec:
       containers:
         - name: autoapply
           image: pascalgn/autoapply:kubectl
-          args: ["env:AUTOAPPLY_CONFIG"]
+          args: ['env:AUTOAPPLY_CONFIG']
           envFrom:
             - secretRef:
                 name: autoapply-ssh-secret
@@ -36,7 +35,6 @@ spec:
                     - mkdir -p ~/.ssh && chmod 700 ~/.ssh
                     - ssh-keyscan -t rsa github.com > ~/.ssh/known_hosts
                     - echo "${id_rsa}" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
-                    - echo "${id_rsa.pub}" > ~/.ssh/id_rsa.pub
                 loop:
                   sleep: 30
                   commands:

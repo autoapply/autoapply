@@ -1,6 +1,7 @@
 FROM jekyll/jekyll:builder
 
-RUN yarn global add 'autoapply@0.6.2'
+RUN yarn global add 'autoapply@0.6.3'
 
+USER jekyll
 ENTRYPOINT [ "autoapply" ]
 CMD []

@@ -10,7 +10,7 @@ RUN apk add --no-cache curl git openssh-client tar \
     && chmod +x /usr/local/bin/kubectl \
     && yarn global add forever yaml-crypt slack-cli yaml-cli
 
-RUN yarn global add 'autoapply@0.6.3'
+RUN yarn global add 'autoapply@0.6.4'
 
 USER autoapply
 WORKDIR /home/autoapply

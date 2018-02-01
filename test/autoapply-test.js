@@ -9,29 +9,52 @@ chai.use(chaiAsPromised);
 chai.use(chaiHttp);
 
 const path = require('path');
+const process = require('process');
 const yaml = require('js-yaml');
 const tmp = require('tmp');
 const fsExtra = require('fs-extra');
 
 const autoapply = require('../bin/autoapply');
 
-autoapply.logger.level = -1;
+process.env.LOG_LEVEL = '-1';
+
+function interceptStdio() {
+    const stdout = process.stdout.write;
+    const stderr = process.stderr.write;
+    process.stdout.write = () => { };
+    process.stderr.write = () => { };
+    return () => {
+        process.stdout.write = stdout;
+        process.stderr.write = stderr;
+    };
+}
 
 describe('autoapply', () => {
+    it('should execute the commands given in the environment variable', () => {
+        const envName = `AUTOAPPLY_TEST_${new Date().getTime()}`;
+        process.env[envName] = 'loop:\n  onerror: fail\n  commands: [ \'false\' ]';
+        const reset = interceptStdio();
+        return autoapply.main(['-d', `env:${envName}`])
+            .then((ctx) => ctx.stop())
+            .then(() => reset())
+            .then(() => process.removeAllListeners('SIGINT'));
+    });
+
     it('should execute the commands given in the config file', () => {
         const d = tmp.dirSync();
         const config = {
             'loop': {
+                'onerror': 'fail',
                 'commands': [
-                    ['true']
-                ],
-                'sleep': 0.01
+                    ['false']
+                ]
             }
         };
         const configFile = path.join(d.name, 'config.yaml');
         fsExtra.writeFileSync(configFile, yaml.safeDump(config));
         return autoapply.main([configFile])
             .then((ctx) => ctx.stop())
+            .then(() => process.removeAllListeners('SIGINT'))
             .then(() => fsExtra.removeSync(d.name));
     });
 
@@ -198,7 +221,7 @@ describe('autoapply', () => {
         };
 
         return autoapply.run(config, { 'loops': 1 })
-            .then((ctx) => Promise.all(ctx.loops))
+            .then((ctx) => ctx.wait())
             .then(() => fsExtra.removeSync(d.name));
     });
 
@@ -214,7 +237,20 @@ describe('autoapply', () => {
                 ]
             }
         };
-        return autoapply.run(config, { 'loops': 1 }).then((ctx) => ctx.loop);
+        return autoapply.run(config, { 'loops': 1 }).then((ctx) => ctx.wait());
+    });
+
+    it('should cancel the sleep when being stopped', (done) => {
+        const config = {
+            'loop': {
+                'commands': [
+                    ['true']
+                ]
+            }
+        };
+        autoapply.run(config).then((ctx) => {
+            setTimeout(() => ctx.stop().then(() => done()), 50);
+        });
     });
 
     it('should sleep when executing the commands', () => {
@@ -230,7 +266,7 @@ describe('autoapply', () => {
                 ]
             }
         };
-        return autoapply.run(config, { 'loops': 2 }).then((ctx) => ctx.loop);
+        return autoapply.run(config, { 'loops': 2 }).then((ctx) => ctx.wait());
     });
 
     it('should throw an error when the command does not exist', () => {
@@ -246,7 +282,7 @@ describe('autoapply', () => {
             }
         };
         return autoapply.run(config, { 'loops': 1 }).then((ctx) =>
-            expect(ctx.loops[0]).to.be.rejectedWith(Error, /nonexistingcommand/));
+            expect(ctx.loops[0].promise).to.be.rejectedWith(Error, /nonexistingcommand/));
     });
 
     it('should provide a /healthz endpoint', (done) => {

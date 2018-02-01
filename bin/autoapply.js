@@ -15,25 +15,31 @@ require('colors');
 
 require('pkginfo')(module);
 
-const logger = new winston.Logger({
-    level: process.env.LOG_LEVEL || 'info',
-    transports: [
-        new winston.transports.Console({
-            formatter: (msg) => {
-                let s = dateFormat.asString() + ' ' + winston.config.colorize(msg.level);
-                if (msg.message) {
-                    s += ' ' + msg.message;
-                }
-                if (msg.meta && Object.keys(msg.meta).length) {
-                    s += ' ' + util.inspect(msg.meta);
-                }
-                return s;
-            }
-        })
-    ]
-});
+const logger = new winston.Logger();
 
+/**
+ * @param {string[]|*} argv the program arguments
+ * @returns {Promise<Context>} the context
+ */
 async function main(argv = null) {
+    logger.configure({
+        level: process.env.LOG_LEVEL || 'info',
+        transports: [
+            new winston.transports.Console({
+                formatter: (msg) => {
+                    let s = dateFormat.asString() + ' ' + winston.config.colorize(msg.level);
+                    if (msg.message) {
+                        s += ' ' + msg.message;
+                    }
+                    if (msg.meta && Object.keys(msg.meta).length) {
+                        s += ' ' + util.inspect(msg.meta);
+                    }
+                    return s;
+                }
+            })
+        ]
+    });
+
     const parser = new argparse.ArgumentParser({
         prog: module.exports.name,
         version: module.exports.version,
@@ -80,38 +86,63 @@ async function main(argv = null) {
             throw e;
         }
     }
-    return run(config, args).then((ctx) => { catchLoops(ctx); return ctx; });
+    return run(config, args).then((ctx) => {
+        setupSignalHandler(ctx);
+        catchLoops(ctx);
+        return ctx;
+    });
 }
 
 class DebugError extends Error { }
 
+function setupSignalHandler(ctx) {
+    const track = { 'time': 0 };
+    process.on('SIGINT', () => {
+        const now = new Date().getTime();
+        if ((now - track.time) > 5000) {
+            logger.info('Signal SIGINT received, shutting down...');
+            ctx.stop().catch((err) => {
+                logger.error('Failed to shut down:', err.message || 'unknown error!');
+            });
+        } else {
+            logger.warn('Terminated.');
+            process.exit();
+        }
+        track.time = now;
+    });
+}
+
+function catchLoops(ctx) {
+    ctx.loops.forEach((loop) => loop.promise = loop.promise.catch((err) => {
+        logger.warn('Error while running loop:', err.message || 'unknown error!');
+    }));
+}
+
+/**
+ * Run the loops given in the configuration
+ *
+ * @param {object} config 
+ * @param {object} options 
+ * @returns {Promise<Context>} the context
+ */
 async function run(config, options = {}) {
-    const ctx = {
-        'running': true,
-        'loops': [],
-        'server': null
-    };
+    const ctx = new Context();
 
     const init = (config.init ? new Init(config.init) : null);
 
-    const loops = [];
     if (!config.loop) {
         throw new Error('invalid configuration, loop section missing!');
     } else if (Array.isArray(config.loop)) {
-        config.loop.forEach((loop) => loops.push(new Loop(loop)));
+        config.loop.forEach((loop) => ctx.loops.push(new Loop(loop)));
     } else {
-        loops.push(new Loop(config.loop));
+        ctx.loops.push(new Loop(config.loop));
     }
 
-    if (loops.length === 1) {
-        loops[0].name = 'Loop';
+    if (ctx.loops.length === 1) {
+        ctx.loops[0].name = 'Loop';
     } else {
-        loops.forEach((loop, idx) => loop.name = `Loop ${idx + 1}`);
+        ctx.loops.forEach((loop, idx) => loop.name = `Loop ${idx + 1}`);
     }
-
-    ctx.stop = () => stop(ctx);
-
-    setupSignalHandler(ctx);
 
     if (config.server && config.server.enabled !== false) {
         const port = (config.server ? config.server.port : 0) || 3000;
@@ -128,51 +159,9 @@ async function run(config, options = {}) {
     }
 
     logger.info('Running loop commands...');
-    ctx.loops = loops.map((loop) => runLoop(loop, options, ctx));
+    ctx.loops.forEach((loop) => loop.start(options, ctx));
 
     return ctx;
-}
-
-function setupSignalHandler(ctx) {
-    const track = { 'time': 0 };
-    process.on('SIGINT', () => {
-        const now = new Date().getTime();
-        if ((now - track.time) > 5000) {
-            logger.info('Signal SIGINT received, shutting down...');
-            stop(ctx).catch((err) => {
-                logger.error('Failed to shut down:', err.message || 'unknown error!');
-            }).then(() => logger.info('Exiting.'));
-        } else {
-            logger.info('Exiting.');
-            process.exit();
-        }
-        track.time = now;
-    });
-}
-
-function stop(ctx) {
-    ctx.running = false;
-    let promise;
-    if (ctx.server) {
-        promise = new Promise((resolve) => {
-            ctx.server.close((err) => {
-                if (err) {
-                    logger.warn('Could not stop server:', err.message || 'unknown error!');
-                }
-                resolve();
-            });
-        });
-    } else {
-        promise = Promise.resolve();
-    }
-    const removeListeners = () => process.removeAllListeners('SIGINT');
-    return promise.then(() => catchLoops(ctx)).then(removeListeners, removeListeners);
-}
-
-function catchLoops(ctx) {
-    return Promise.all(ctx.loops.map((loop) => loop.catch((err) => {
-        logger.warn('Error while running loop:', err.message || 'unknown error!');
-    })));
 }
 
 function startServer(port) {
@@ -228,6 +217,13 @@ function handleRequest(request, response) {
     }
 }
 
+/**
+ * Run the commands in the given loop until the program is stopped
+ *
+ * @param {Loop} loop 
+ * @param {object} options 
+ * @param {object} ctx 
+ */
 async function runLoop(loop, options, ctx) {
     const prefix = (loop.name ? `${loop.name}: ` : '');
     let cur = 1;
@@ -242,18 +238,18 @@ async function runLoop(loop, options, ctx) {
                 await runCommands(loop.commands, tmpDir.path, loop.onError,
                     options.debug, prefix, ctx);
             } finally {
-                logger.debug(`${prefix}Deleting directory...`);
                 await fsExtra.remove(tmpDir.path);
+                logger.debug(`${prefix}Deleted temporary directory.`);
             }
         }
 
-        if (loops && ++cur > loops) {
+        if (!ctx.running || (loops && ++cur > loops)) {
             break;
         }
 
         if (loop.sleep) {
             logger.info(`${prefix}Sleeping for ${loop.sleep}s...`);
-            await sleep(loop.sleep * 1000);
+            await loop.doSleep();
         } else {
             logger.debug(`${prefix}Not sleeping (sleep = 0)`);
         }
@@ -263,10 +259,12 @@ async function runLoop(loop, options, ctx) {
 /**
  * Run the given commands, one at a time
  *
- * @param {Command[]} commands 
- * @param {string} cwd 
- * @param {string} onerror 
- * @param {boolean} debug 
+ * @param {Command[]} commands
+ * @param {string} cwd
+ * @param {string} onerror
+ * @param {boolean} debug
+ * @param {string} prefix
+ * @param {Context} ctx
  */
 async function runCommands(commands, cwd, onerror, debug, prefix, ctx) {
     logger.debug('Executing in directory:', cwd);
@@ -282,17 +280,16 @@ async function runCommands(commands, cwd, onerror, debug, prefix, ctx) {
                 throw e;
             } else {
                 if (debug) {
-                    logger.error('Command failed:', e);
+                    logger.silly('Command failed:', e);
+                }
+                if (e.code === 'ENOENT') {
+                    logger.error('Command not found!');
+                } else if (e.message) {
+                    logger.error(e.message);
+                } else if (e.code) {
+                    logger.error(`Command failed with exit code ${e.code}`);
                 } else {
-                    if (e.code === 'ENOENT') {
-                        logger.error('Command not found!');
-                    } else if (e.message) {
-                        logger.error(e.message);
-                    } else if (e.code) {
-                        logger.error(`Command failed with exit code ${e.code}`);
-                    } else {
-                        logger.error('Command failed!');
-                    }
+                    logger.error('Command failed!');
                 }
                 if (onerror === 'ignore') {
                     continue;
@@ -304,6 +301,39 @@ async function runCommands(commands, cwd, onerror, debug, prefix, ctx) {
                 }
             }
         }
+    }
+}
+
+class Context {
+    constructor() {
+        this.running = true;
+        this.active = 0;
+        this.loops = [];
+        this.server = null;
+    }
+
+    stop() {
+        this.running = false;
+        this.loops.forEach((loop) => loop.stop());
+        let promise;
+        if (this.server) {
+            promise = new Promise((resolve) => {
+                this.server.close((err) => {
+                    if (err) {
+                        logger.warn('Could not stop server:', err.message || 'unknown error!');
+                    }
+                    this.server = null;
+                    resolve();
+                });
+            });
+        } else {
+            promise = Promise.resolve();
+        }
+        return promise.then(() => this.wait());
+    }
+
+    wait() {
+        return Promise.all(this.loops.map((loop) => loop.promise));
     }
 }
 
@@ -327,6 +357,37 @@ class Loop {
         this.sleep = parseSleep(loop.sleep);
         this.onError = parseOnError(loop.onerror, 'continue');
         this.commands = loop.commands.map((cmd) => new Command(cmd));
+    }
+
+    start(options, ctx) {
+        ctx.active += 1;
+        function stopped() {
+            ctx.active -= 1;
+            if (ctx.active === 0) {
+                logger.info('Exit.');
+            }
+        }
+        this.promise = doFinally(runLoop(this, options, ctx), stopped);
+    }
+
+    doSleep() {
+        return new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+                this._wait = null;
+                resolve();
+            }, this.sleep * 1000);
+            this._wait = [timeout, resolve];
+        });
+    }
+
+    stop() {
+        if (this._wait) {
+            const [timeout, resolve] = this._wait;
+            clearTimeout(timeout);
+            setImmediate(resolve);
+            this._wait = null;
+            logger.debug(`${this.name} has been stopped.`);
+        }
     }
 }
 
@@ -391,6 +452,18 @@ function isObject(value) {
     return value && typeof value === 'object' && value.constructor === Object;
 }
 
+function doFinally(promise, callback) {
+    function onThen(result) {
+        callback();
+        return result;
+    }
+    function onCatch(err) {
+        callback();
+        throw err;
+    }
+    return promise.then(onThen, onCatch);
+}
+
 function parseOnError(value, defaultValue) {
     if (!value) {
         return defaultValue;
@@ -427,11 +500,6 @@ function parseStdio(value) {
     }
 }
 
-function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-module.exports.logger = logger;
 module.exports.main = main;
 module.exports.run = run;
 

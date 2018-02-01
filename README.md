@@ -32,7 +32,7 @@ For a docker version, use
 
 * `latest` provides a minimal image with just *autoapply* installed ([Dockerfile](build/Dockerfile))
 * `kubectl` also provides *git* and *kubectl* ([Dockerfile](build/extra/Dockerfile))
-* `jekyll` also provides *jekyll* ([Dockerfile](build/extra/Dockerfile))
+* `jekyll` also provides *git* and *jekyll* ([Dockerfile](build/extra/Dockerfile))
 
 ## Configuration
 

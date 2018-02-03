@@ -15,7 +15,7 @@ ENV KUBECTL_URL "https://storage.googleapis.com/kubernetes-release/release/v1.9.
 RUN curl --fail "${KUBECTL_URL}" > /usr/local/bin/kubectl \
     && chmod +x /usr/local/bin/kubectl
 
-RUN yarn global add 'autoapply@0.6.5'
+RUN yarn global add 'autoapply@0.6.6'
 
 USER autoapply
 WORKDIR /home/autoapply

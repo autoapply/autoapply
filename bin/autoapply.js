@@ -455,6 +455,7 @@ class Command {
         if (this.script) {
             promise = tmpPromise.file().then((tmp) => {
                 const writeFile = () => fsExtra.writeFile(tmp.path, this.script, 'utf8')
+                    .then(() => fsExtra.close(tmp.fd))
                     .then(() => fsExtra.chmod(tmp.path, 0o700))
                     .then(() => logger.debug(`Script written: ${tmp.path}`));
                 const execute = () => this._spawn(tmp.path, [], options);

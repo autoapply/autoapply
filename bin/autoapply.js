@@ -55,7 +55,7 @@ async function main(argv = null) {
         help: 'Configuration file to use'
     });
     const args = parser.parseArgs(argv);
-    if (args.debug) {
+    if (args.debug && logger.level === 'info') {
         logger.level = 'debug';
     }
     let config;
@@ -272,7 +272,11 @@ async function runCommands(commands, cwd, onerror, debug, prefix, ctx) {
         if (!ctx.running) {
             break;
         }
-        logger.info(`${prefix}Executing command:`, JSON.stringify(command.command));
+        if (command.command) {
+            logger.info(`${prefix}Executing command:`, JSON.stringify(command.command));
+        } else {
+            logger.info(`${prefix}Executing script...`);
+        }
         try {
             await command.run(cwd);
         } catch (e) {
@@ -394,7 +398,14 @@ class Loop {
 class Command {
     constructor(command) {
         if (isObject(command)) {
-            this.command = command['command'];
+            if (command['command'] && command['script']) {
+                throw new Error('cannot combine command and script!');
+            }
+            if (command['script']) {
+                this.script = command['script'];
+            } else {
+                this.command = command['command'];
+            }
             this.stdout = parseStdio(command['stdout']);
             this.stderr = parseStdio(command['stderr']);
         } else {
@@ -402,27 +413,38 @@ class Command {
             this.stdout = 'pipe';
             this.stderr = 'pipe';
         }
-        if (typeof this.command === 'string') {
-            this.command = this.command.trim();
-            if (!this.command) {
-                throw new Error('command is empty!');
-            }
-        } else if (Array.isArray(this.command)) {
-            if (!this.command.length || !this.command[0]) {
-                throw new Error(`invalid command: ${this.command}`);
-            }
-            for (const cmd of this.command) {
-                if (typeof cmd !== 'string') {
-                    throw new Error(`invalid command: ${this.command}`);
+        if (this.script) {
+            if (typeof this.script === 'string') {
+                this.script = this.script.trim();
+                if (!this.script) {
+                    throw new Error('script is empty!');
                 }
+            } else {
+                throw new Error(`invalid script: ${this.script}`);
             }
         } else {
-            throw new Error(`invalid command: ${this.command}`);
+            if (typeof this.command === 'string') {
+                this.command = this.command.trim();
+                if (!this.command) {
+                    throw new Error('command is empty!');
+                }
+            } else if (Array.isArray(this.command)) {
+                if (!this.command.length || !this.command[0]) {
+                    throw new Error(`invalid command: ${this.command}`);
+                }
+                for (const cmd of this.command) {
+                    if (typeof cmd !== 'string') {
+                        throw new Error(`invalid command: ${this.command}`);
+                    }
+                }
+            } else {
+                throw new Error(`invalid command: ${this.command}`);
+            }
         }
     }
 
     run(cwd) {
-        const shell = (typeof this.command === 'string');
+        const shell = (typeof this.script === 'string' || typeof this.command === 'string');
         const options = {
             'cwd': cwd,
             'stdio': ['ignore', this.stdout, this.stderr],
@@ -430,12 +452,29 @@ class Command {
         };
 
         let promise;
-        if (shell) {
-            promise = childProcessPromise.spawn(this.command, [], options);
+        if (this.script) {
+            promise = tmpPromise.file().then((tmp) => {
+                const writeFile = () => fsExtra.writeFile(tmp.path, this.script, 'utf8')
+                    .then(() => fsExtra.chmod(tmp.path, 0o700))
+                    .then(() => logger.debug(`Script written: ${tmp.path}`));
+                const execute = () => this._spawn(tmp.path, [], options);
+                const deleteFile = () => fsExtra.unlink(tmp.path)
+                    .then(() => logger.debug(`Script deleted: ${tmp.path}`));
+                return doFinally(writeFile().then(execute), deleteFile);
+            });
         } else {
-            promise = childProcessPromise.spawn(this.command[0], this.command.slice(1), options);
+            if (shell) {
+                promise = this._spawn(this.command, [], options);
+            } else {
+                promise = this._spawn(this.command[0], this.command.slice(1), options);
+            }
         }
 
+        return promise;
+    }
+
+    _spawn(cmd, args, options) {
+        const promise = childProcessPromise.spawn(cmd, args, options);
         const childProcess = promise.childProcess;
         if (this.stdout === 'pipe') {
             childProcess.stdout.on('data', (data) => process.stdout.write(data));
@@ -443,7 +482,6 @@ class Command {
         if (this.stderr === 'pipe') {
             childProcess.stderr.on('data', (data) => process.stderr.write(data));
         }
-
         return promise;
     }
 }

@@ -5,4 +5,4 @@ tests:
 	yarn lint
 
 upload: tests
-	yarn publish
+	yarn publish --non-interactive

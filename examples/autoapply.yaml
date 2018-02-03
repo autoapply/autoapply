@@ -27,6 +27,10 @@ init:
     stdout: pipe
     # same options as for "stdout", but for the standard error of the command
     stderr: ignore
+  # it is also possible to specify full scripts to be executed:
+  - script: |
+      #!/usr/bin/env node
+      console.log('Hello, world!');
 
 # required section, defining loop commands
 loop:

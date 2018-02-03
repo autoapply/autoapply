@@ -117,6 +117,17 @@ describe('autoapply', () => {
         return expect(autoapply.run(config)).to.be.rejectedWith(Error, 'command is empty!');
     });
 
+    it('should fail when a blank script is given', () => {
+        const config = {
+            'loop': {
+                'commands': [
+                    { 'script': ' ' }
+                ]
+            }
+        };
+        return expect(autoapply.run(config)).to.be.rejectedWith(Error, 'script is empty!');
+    });
+
     it('should fail when an invalid command object is given', () => {
         const config = {
             'loop': {
@@ -125,6 +136,31 @@ describe('autoapply', () => {
         };
         return expect(autoapply.run(config)).to.be.rejectedWith(Error,
             'invalid command: undefined');
+    });
+
+    it('should fail when an invalid script is given', () => {
+        const config = {
+            'loop': {
+                'commands': [{ 'script': [] }]
+            }
+        };
+        return expect(autoapply.run(config)).to.be.rejectedWith(Error,
+            'invalid script');
+    });
+
+    it('should fail when both command and script are given', () => {
+        const config = {
+            'loop': {
+                'commands': [
+                    {
+                        'command': 'command',
+                        'script': 'script'
+                    }
+                ]
+            }
+        };
+        return expect(autoapply.run(config)).to.be.rejectedWith(Error,
+            'cannot combine command and script!');
     });
 
     it('should fail when the initialization fails', () => {
@@ -161,7 +197,22 @@ describe('autoapply', () => {
                 ]
             }
         };
-        return autoapply.run(config, { 'loops': 1 }).then((ctx) => ctx.stop());
+        return autoapply.run(config, { 'loops': 1 }).then((ctx) => ctx.wait());
+    });
+
+    it('should execute the given script', () => {
+        const config = {
+            'loop': {
+                'onerror': 'fail',
+                'commands': [
+                    {
+                        'script': '#!/bin/sh\nfalse\ntrue\ndate',
+                        'stdout': 'ignore'
+                    }
+                ]
+            }
+        };
+        return autoapply.run(config, { 'loops': 1 }).then((ctx) => ctx.wait());
     });
 
     it('should execute multiple loops', () => {

@@ -1,9 +1,6 @@
 # autoapply
 
-[![Build Status](https://img.shields.io/travis/pascalgn/autoapply.svg?style=flat-square)](https://travis-ci.org/pascalgn/autoapply)
-[![Coverage status](https://img.shields.io/coveralls/github/pascalgn/autoapply.svg?style=flat-square)](https://coveralls.io/github/pascalgn/autoapply)
-[![Docker build status](https://img.shields.io/docker/build/pascalgn/autoapply.svg?style=flat-square)](https://hub.docker.com/r/pascalgn/autoapply/)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/pascalgn/autoapply/blob/master/LICENSE)
+[![Build Status](https://img.shields.io/travis/pascalgn/autoapply.svg?style=flat-square)](https://travis-ci.org/pascalgn/autoapply) [![Coverage status](https://img.shields.io/coveralls/github/pascalgn/autoapply.svg?style=flat-square)](https://coveralls.io/github/pascalgn/autoapply) [![Docker build status](https://img.shields.io/docker/build/pascalgn/autoapply.svg?style=flat-square)](https://hub.docker.com/r/pascalgn/autoapply/) [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/pascalgn/autoapply/blob/master/LICENSE)
 
 Run scripts in a Kubernetes cluster with as little setup as possible.
 
@@ -31,8 +28,9 @@ For a docker version, use
 ## Docker images
 
 * `latest` provides a minimal image with just *autoapply* installed ([Dockerfile](build/Dockerfile))
-* `kubectl` also provides *git* and *kubectl* ([Dockerfile](build/extra/Dockerfile))
-* `jekyll` also provides *git* and *jekyll* ([Dockerfile](build/extra/Dockerfile))
+* `kubectl` also provides *git*, *kubectl* and *[dockerize](https://github.com/jwilder/dockerize)* ([Dockerfile](build/kubectl/Dockerfile))
+* `helm` also provides *[helm](https://github.com/kubernetes/helm)* ([Dockerfile](build/helm/Dockerfile))
+* `jekyll` also provides *git* and *[jekyll](https://jekyllrb.com)* ([Dockerfile](build/jekyll/Dockerfile))
 
 ## Configuration
 
@@ -49,9 +47,6 @@ configuration to the Kubernetes cluster. After sleeping for 60 seconds, the comm
 executed again.
 
 For the full documentation of the configuration, see [autoapply.yaml](examples/autoapply.yaml).
-
-See [kubernetes-simple.yaml](examples/kubernetes-simple.yaml) for a simple working example
-or [kubernetes-ssh.yaml](examples/kubernetes-ssh.yaml) for a more avanced setup.
 
 # License
 

@@ -1,6 +1,7 @@
 # optional section, configuring the internal HTTP server
 server:
   # set this to true if you want to have the HTTP server running
+  # the server will be enabled automatically when you specify calls
   enabled: false
   # the HTTP port that the server will listen on, default is 3000
   port: 3000
@@ -32,7 +33,26 @@ init:
       #!/usr/bin/env node
       console.log('Hello, world!');
 
-# required section, defining loop commands
+# optional section, defining web commands
+call:
+- path: /date
+  # HTTP headers to send for each request
+  headers:
+  - name: Content-Type
+    value: text/plain; charset=utf-8
+  # start to send available data to the client before
+  # all commands have finished? (default: false)
+  # also see https://stackoverflow.com/a/35848615
+  stream: false
+  # directory in which to execute the commands (working directory)
+  # if unset, a new temporary directory will be created for each call
+  cwd: '/tmp'
+  # commands that should be run when the URL is called
+  # see section "init" for the command syntax
+  commands:
+  - date
+
+# optional section, defining loop commands
 loop:
   # directory in which to execute the commands (working directory)
   # if unset, a new temporary directory will be created for each loop iteration

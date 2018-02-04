@@ -1,3 +1,5 @@
+'use strict';
+
 const mocha = require('mocha');
 const describe = mocha.describe;
 const it = mocha.it;
@@ -32,12 +34,14 @@ function interceptStdio() {
 describe('autoapply', () => {
     it('should execute the commands given in the environment variable', () => {
         const envName = `AUTOAPPLY_TEST_${new Date().getTime()}`;
-        process.env[envName] = 'loop:\n  onerror: fail\n  commands: [ \'false\' ]';
+        process.env.LOG_LEVEL = 'info';
+        process.env[envName] = 'loop:\n  onerror: fail\n  commands: [ \'ls nonexisting\' ]';
         const reset = interceptStdio();
         return autoapply.main(['-d', `env:${envName}`])
             .then((ctx) => ctx.stop())
             .then(() => reset())
-            .then(() => process.removeAllListeners('SIGINT'));
+            .then(() => process.removeAllListeners('SIGINT'))
+            .then(() => process.env.LOG_LEVEL = '-1');
     });
 
     it('should execute the commands given in the config file', () => {
@@ -96,7 +100,7 @@ describe('autoapply', () => {
 
     it('should fail when no commands are given', () => {
         return expect(autoapply.run({})).to.be.rejectedWith(Error,
-            'invalid configuration, loop section missing!');
+            'invalid configuration, neither loop nor call section given!');
     });
 
     it('should fail when an empty command is given', () => {
@@ -163,6 +167,64 @@ describe('autoapply', () => {
             'cannot combine command and script!');
     });
 
+    it('should fail when the call has no path', () => {
+        const config = {
+            'call': {
+                'commands': ['date']
+            }
+        };
+        return expect(autoapply.run(config)).to.be.rejectedWith(Error,
+            'call: no path given!');
+    });
+
+    it('should fail when the header value invalid', () => {
+        const config = {
+            'call': {
+                'path': '/date',
+                'headers': 'a',
+                'commands': ['date']
+            }
+        };
+        return expect(autoapply.run(config)).to.be.rejectedWith(Error,
+            'invalid header value: a');
+    });
+
+    it('should fail when the header value is not a string', () => {
+        const config = {
+            'call': {
+                'path': '/date',
+                'headers': { 'a': 1 },
+                'commands': ['date']
+            }
+        };
+        return expect(autoapply.run(config)).to.be.rejectedWith(Error,
+            'header value is not a string: 1');
+    });
+
+    it('should fail when the header array name is not a string', () => {
+        const config = {
+            'call': {
+                'path': '/date',
+                'headers': [{ 'name': 1, 'value': 'a' }],
+                'commands': ['date']
+            }
+        };
+        return expect(autoapply.run(config)).to.be.rejectedWith(Error,
+            'header name is not a string: 1');
+    });
+
+    it('should fail when the header array value is not a string', () => {
+        const config = {
+            'call': {
+                'path': '/date',
+                'headers': [{ 'name': 'a', 'value': 1 }],
+                'commands': ['date']
+            }
+        };
+        return expect(autoapply.run(config)).to.be.rejectedWith(Error,
+            'header value is not a string: 1');
+    });
+
     it('should fail when the initialization fails', () => {
         const config = {
             'init': {
@@ -213,6 +275,70 @@ describe('autoapply', () => {
             }
         };
         return autoapply.run(config, { 'loops': 1 }).then((ctx) => ctx.wait());
+    });
+
+    it('should execute the commands when calling the URL', (done) => {
+        const config = {
+            'call': [
+                {
+                    'path': '/echo',
+                    'headers': { 'Content-Type': 'text/plain' },
+                    'commands': [
+                        'echo hello',
+                        'echo world >&2',
+                    ]
+                }
+            ]
+        };
+        autoapply.run(config).then((ctx) => {
+            chai.request('http://localhost:3000').get('/echo').end((err, res) => {
+                expect(res).to.have.status(200);
+                expect(res).to.have.header('Content-Type', 'text/plain');
+                expect(res.text).to.equal('hello\nworld\n');
+                ctx.stop().then(() => done());
+            });
+        });
+    });
+
+    it('should return 500 when the call failed', (done) => {
+        const config = {
+            'call': [
+                {
+                    'path': '/error',
+                    'commands': [
+                        'ls nonexisting',
+                    ]
+                }
+            ]
+        };
+        autoapply.run(config).then((ctx) => {
+            chai.request('http://localhost:3000').get('/error').end((err, res) => {
+                expect(res).to.have.status(500);
+                ctx.stop().then(() => done());
+            });
+        });
+    });
+
+    it('should stream the data when calling the URL', (done) => {
+        const config = {
+            'call': [
+                {
+                    'path': '/echo',
+                    'stream': true,
+                    'commands': [
+                        'echo hello',
+                        'echo world >&2'
+                    ]
+                }
+            ]
+        };
+        autoapply.run(config).then((ctx) => {
+            chai.request('http://localhost:3000').get('/echo').end((err, res) => {
+                expect(res).to.have.status(200);
+                expect(res.text).to.equal('hello\nworld\n');
+                ctx.stop().then(() => done());
+            });
+        });
     });
 
     it('should execute multiple loops', () => {
@@ -353,6 +479,26 @@ describe('autoapply', () => {
             chai.request('http://localhost:3001').get('/healthz').end((err, res) => {
                 expect(res).to.have.status(200);
                 expect(res.text).to.equal('OK');
+                ctx.stop().then(() => done());
+            });
+        });
+    });
+
+    it('should return 200 for valid HEAD requests', (done) => {
+        const config = {
+            'server': {
+                'enabled': true
+            },
+            'loop': {
+                'commands': [
+                    ['true']
+                ]
+            }
+        };
+
+        autoapply.run(config, { 'loops': 1 }).then((ctx) => {
+            chai.request('http://localhost:3000').head('/healthz').end((err, res) => {
+                expect(res).to.have.status(200);
                 ctx.stop().then(() => done());
             });
         });

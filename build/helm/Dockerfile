@@ -7,7 +7,7 @@ RUN apk add --no-cache curl git openssh-client tar openssl \
 ENV HELM_URL "https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get"
 RUN curl --fail "${HELM_URL}" | /bin/sh
 
-RUN yarn global add 'autoapply@0.6.6'
+RUN yarn global add 'autoapply@0.7.0'
 
 USER autoapply
 WORKDIR /home/autoapply

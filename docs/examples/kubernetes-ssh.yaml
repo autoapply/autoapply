@@ -1,12 +1,12 @@
+# See https://github.com/pascalgn/autoapply/blob/master/docs/deploy-keys.md
 apiVersion: v1
 kind: Secret
 metadata:
   name: autoapply-ssh-secret
 type: Opaque
 data:
-  # replace these secrets with your own generated SSH keys! To create this secret, use:
-  # kubectl create secret generic autoapply-ssh-secret --dry-run --from-file=id_rsa -o yaml
   id_rsa: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQ...
+  known_hosts: Z2l0aHViLmNvbSBzc2gtcnNhIEFBQUFCM056Y...
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -33,13 +33,13 @@ spec:
                   # in ~/.ssh with the correct restrictive permissions (only readable by user)
                   commands:
                     - mkdir -p ~/.ssh && chmod 700 ~/.ssh
-                    - ssh-keyscan -t rsa github.com > ~/.ssh/known_hosts
                     - echo "${id_rsa}" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
+                    - echo "${known_hosts}" > ~/.ssh/known_hosts
                 loop:
                   sleep: 30
                   commands:
-                    - git clone --depth 1 git@github.com:pascalgn/hostinfo
-                    - kubectl apply -f hostinfo/examples/kubernetes.yaml
+                    - git clone --depth 1 git@github.com:pascalgn/hello-world workspace/
+                    - kubectl apply -f workspace/
                 server:
                   enabled: true
           ports:

@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hello-world-config-1
+data:
+  index.html: |
+    <html><body>
+    <p>Hello, World!</p>
+    </body></html>
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: hello-world
+spec:
+  template:
+    metadata:
+      labels:
+        app: hello-world
+    spec:
+      containers:
+        - name: hello-world
+          image: nginx
+          ports:
+            - containerPort: 80
+              name: http
+          volumeMounts:
+            - name: hello-world-config-volume
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: hello-world-config-volume
+          configMap:
+            name: hello-world-config-1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world
+  labels:
+    app: hello-world
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: http
+      name: service-http
+  selector:
+      app: hello-world

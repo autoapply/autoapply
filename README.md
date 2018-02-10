@@ -2,52 +2,70 @@
 
 [![Build Status](https://img.shields.io/travis/pascalgn/autoapply.svg?style=flat-square)](https://travis-ci.org/pascalgn/autoapply) [![Coverage status](https://img.shields.io/coveralls/github/pascalgn/autoapply.svg?style=flat-square)](https://coveralls.io/github/pascalgn/autoapply) [![Docker build status](https://img.shields.io/docker/build/pascalgn/autoapply.svg?style=flat-square)](https://hub.docker.com/r/pascalgn/autoapply/) [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/pascalgn/autoapply/blob/master/LICENSE)
 
-Run scripts in a Kubernetes cluster with as little setup as possible.
+Automatically apply changes to a Kubernetes cluster.
 
-## Examples
+![Technical overview](docs/overview.svg)
 
-- Automatically apply changes from a Git repository to the Kubernetes cluster
-  ([kubernetes-simple.yaml](examples/kubernetes-simple.yaml))
-- Serve a static [Gatsby](https://www.gatsbyjs.org/) site, watching repository changes
-  ([gatsby-hello-world.yaml](examples/gatsby-hello-world.yaml))
-- [...](examples/)
+- All resource files are stored in Git, which means there is a single source of truth
+  for the state of your application.
+- When editing resource files, the changes can be documented and merged using your standard Git workflow.
+
+---
+
+1. [Usage](#usage)
+2. [Configuration](#configuration)
+3. [Docker tags](#docker-tags)
+4. [Related projects](#related-projects)
+5. [License](#license)
 
 ## Usage
 
-To start autoapply locally, run
+First create an empty, publicly accessible repository.
+For private repositories, you can use [deploy keys](docs/deploy-keys.md).
+Add the desired Kubernetes resource files to the repository, for example [nginx.yaml](docs/examples/nginx.yaml),
+and make sure all files have been pushed.
 
-    $ yarn global add autoapply
-    $ vim autoapply.yaml
-    $ autoapply autoapply.yaml
+Now download [kubernetes-simple.yaml](docs/examples/kubernetes-simple.yaml) and change 
+`https://github.com/pascalgn/hello-world` to the URL of the repository you just created.
+Then create the autoapply deployment in your cluster:
 
-For a docker version, use
+```
+$ kubectl apply -f kubernetes-simple.yaml
+```
 
-    $ vim autoapply.yaml
-    $ docker run --detach -v $(pwd)/autoapply.yaml:/home/autoapply/autoapply.yaml pascalgn/autoapply autoapply.yaml
+Now, autoapply will download the resource files from your repository and apply them to the cluster.
+When you update the repository, autoapply will fetch the new files and update the cluster accordingly.
 
-## Docker images
-
-* `latest` provides a minimal image with just *autoapply* installed ([Dockerfile](build/Dockerfile))
-* `kubectl` also provides *git*, *kubectl* and *[dockerize](https://github.com/jwilder/dockerize)* ([Dockerfile](build/kubectl/Dockerfile))
-* `helm` also provides *[helm](https://github.com/kubernetes/helm)* ([Dockerfile](build/helm/Dockerfile))
-* `jekyll` also provides *git* and *[jekyll](https://jekyllrb.com)* ([Dockerfile](build/jekyll/Dockerfile))
+For more detailed instructions, see [Hello, World!](docs/hello-world.md)
 
 ## Configuration
 
-A basic configuration file will look like this:
+A basic configuration file looks like this:
 
-    loop:
-      sleep: 60
-      commands:
-      - git clone --depth 1 https://github.com/pascalgn/hostinfo
-      - kubectl apply -f hostinfo/examples/kubernetes.yaml
+```yaml
+loop:
+  commands:
+  - git clone --depth 1 https://github.com/pascalgn/hello-world workspace/
+  - kubectl apply -f workspace/
+```
 
-When running, autoapply will fetch the latest commit from the git repository and then apply the
-configuration to the Kubernetes cluster. After sleeping for 60 seconds, the commands will be
-executed again.
+For more information, see the [documentation](docs/configuration.md).
 
-For the full documentation of the configuration, see [autoapply.yaml](examples/autoapply.yaml).
+## Docker tags
 
-# License
+* `latest` provides a minimal image with just *autoapply* installed ([Dockerfile](build/Dockerfile))
+* `kubectl` also provides *git*, *kubectl* and *[dockerize](https://github.com/jwilder/dockerize)* ([Dockerfile](build/kubectl/Dockerfile))
+* `helm` also provides *git* and *[helm](https://github.com/kubernetes/helm)* ([Dockerfile](build/helm/Dockerfile))
+* `jekyll` also provides *ruby*, *java*, *git* and *[jekyll](https://jekyllrb.com)* ([Dockerfile](build/jekyll/Dockerfile))
+
+## Related projects
+
+- [Keel](https://github.com/keel-hq/keel) provides fully automated updates, but only changes
+  the container image version, nothing else.
+- [Helm](https://github.com/kubernetes/helm) does not provide automated updates, but still offers
+  a consistent way to release new versions. However, you will still need a way to manage the values
+  that will be used to create releases from charts.
+
+## License
 
 Autoapply is licensed under the [MIT License](LICENSE)

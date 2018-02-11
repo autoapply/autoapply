@@ -19,7 +19,7 @@ ENV SOPS_URL "https://github.com/mozilla/sops/releases/download/3.0.2/sops-3.0.2
 RUN curl --fail -L "${SOPS_URL}" > /usr/local/bin/sops \
     && chmod +x /usr/local/bin/sops
 
-RUN yarn global add 'autoapply@0.7.0'
+RUN yarn global add 'autoapply@0.7.1'
 
 USER autoapply
 WORKDIR /home/autoapply

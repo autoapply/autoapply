@@ -225,6 +225,30 @@ describe('autoapply', () => {
             'header value is not a string: 1');
     });
 
+    it('should fail when the method value is invalid', () => {
+        const config = {
+            'call': {
+                'path': '/date',
+                'methods': 1,
+                'commands': ['date']
+            }
+        };
+        return expect(autoapply.run(config)).to.be.rejectedWith(Error,
+            'invalid methods value: 1');
+    });
+
+    it('should fail when the method array value is not a string', () => {
+        const config = {
+            'call': {
+                'path': '/date',
+                'methods': ['GET', 1],
+                'commands': ['date']
+            }
+        };
+        return expect(autoapply.run(config)).to.be.rejectedWith(Error,
+            'method is not a string: 1');
+    });
+
     it('should fail when the initialization fails', () => {
         const config = {
             'init': {
@@ -282,6 +306,7 @@ describe('autoapply', () => {
             'call': [
                 {
                     'path': '/echo',
+                    'methods': [],
                     'headers': { 'Content-Type': 'text/plain' },
                     'commands': [
                         'echo hello',
@@ -295,6 +320,27 @@ describe('autoapply', () => {
                 expect(res).to.have.status(200);
                 expect(res).to.have.header('Content-Type', 'text/plain');
                 expect(res.text).to.equal('hello\nworld\n');
+                ctx.stop().then(() => done());
+            });
+        });
+    });
+
+    it('should be able to read the HTTP headers when calling the URL', (done) => {
+        const config = {
+            'call': [
+                {
+                    'path': '/header',
+                    'methods': ['*'],
+                    'commands': [
+                        'echo "hello from ${HTTP_HOST}"'
+                    ]
+                }
+            ]
+        };
+        autoapply.run(config).then((ctx) => {
+            chai.request('http://localhost:3000').get('/header').end((err, res) => {
+                expect(res).to.have.status(200);
+                expect(res.text).to.equal('hello from localhost:3000\n');
                 ctx.stop().then(() => done());
             });
         });
@@ -314,6 +360,25 @@ describe('autoapply', () => {
         autoapply.run(config).then((ctx) => {
             chai.request('http://localhost:3000').get('/error').end((err, res) => {
                 expect(res).to.have.status(500);
+                ctx.stop().then(() => done());
+            });
+        });
+    });
+
+    it('should return 405 when the method is unsupported', (done) => {
+        const config = {
+            'call': [
+                {
+                    'path': '/date',
+                    'commands': [
+                        'date',
+                    ]
+                }
+            ]
+        };
+        autoapply.run(config).then((ctx) => {
+            chai.request('http://localhost:3000').post('/date').end((err, res) => {
+                expect(res).to.have.status(405);
                 ctx.stop().then(() => done());
             });
         });

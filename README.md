@@ -55,8 +55,8 @@ For more information, see the [documentation](docs/configuration.md).
 ## Docker tags
 
 * `latest` provides a minimal image with just *autoapply* installed ([Dockerfile](build/Dockerfile))
-* `kubectl` also provides *git*, *kubectl*, *sops* and *[dockerize](https://github.com/jwilder/dockerize)* ([Dockerfile](build/kubectl/Dockerfile))
-* `helm` also provides *git*, *sops* and *[helm](https://github.com/kubernetes/helm)* ([Dockerfile](build/helm/Dockerfile))
+* `kubectl` also provides *git*, *kubectl*, *[sops](https://github.com/mozilla/sops)* and *[dockerize](https://github.com/jwilder/dockerize)* ([Dockerfile](build/kubectl/Dockerfile))
+* `helm` also provides *git*, *[sops](https://github.com/mozilla/sops)* and *[helm](https://github.com/kubernetes/helm)* ([Dockerfile](build/helm/Dockerfile))
 * `jekyll` also provides *ruby*, *java*, *git* and *[jekyll](https://jekyllrb.com)* ([Dockerfile](build/jekyll/Dockerfile))
 
 ## Related projects

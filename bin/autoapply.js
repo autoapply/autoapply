@@ -166,7 +166,7 @@ async function run(config, options = {}) {
 
     if (init) {
         logger.info('Running init commands...');
-        await runCommands(init.commands, init.cwd, init.onError, 'Init: ', null, ctx);
+        await runCommands(init.commands, init.cwd, init.onError, 'Init: ', {}, null, ctx);
     } else {
         logger.info('No init commands.');
     }
@@ -202,7 +202,17 @@ async function handleRequest(request, response, ctx) {
 
     let handler = null;
     if (request.url === '/healthz') {
-        handler = (request, response) => response.end('OK');
+        handler = (request, response) => {
+            if (request.method === 'HEAD') {
+                response.writeHead(200, http.STATUS_CODES[200]);
+                response.end();
+            } else if (request.method === 'GET') {
+                response.end('OK');
+            } else {
+                response.writeHead(405, http.STATUS_CODES[405]);
+                response.end('Only GET or HEAD supported!');
+            }
+        };
     } else {
         const call = ctx.calls.find((call) => call.path === request.url);
         if (call) {
@@ -211,20 +221,12 @@ async function handleRequest(request, response, ctx) {
     }
 
     if (handler) {
-        if (request.method === 'HEAD') {
-            response.writeHead(200, http.STATUS_CODES[200]);
+        try {
+            await handler(request, response, ctx);
+        } catch (e) {
+            logger.info('Error handling request:', request.url, e.message || 'unknown error!');
+        } finally {
             response.end();
-        } else if (request.method === 'GET') {
-            try {
-                await handler(request, response, ctx);
-            } catch (e) {
-                logger.info('Error handling request:', request.url, e.message || 'unknown error!');
-            } finally {
-                response.end();
-            }
-        } else {
-            response.writeHead(405, http.STATUS_CODES[405]);
-            response.end('Only GET or HEAD supported!');
         }
     } else {
         response.writeHead(404, http.STATUS_CODES[404]);
@@ -240,18 +242,18 @@ async function handleRequest(request, response, ctx) {
  * @param {object} ctx 
  */
 async function runLoop(loop, options, ctx) {
-    const prefix = loop.name;
+    const prefix = `${loop.name}: `;
     let cur = 1;
     const loops = options.loops;
     while (ctx.running) {
         if (loop.cwd) {
             await runCommands(loop.commands, loop.cwd, loop.onError,
-                prefix, null, ctx);
+                prefix, {}, null, ctx);
         } else {
             const tmpDir = await tmpPromise.dir();
             try {
                 await runCommands(loop.commands, tmpDir.path, loop.onError,
-                    prefix, null, ctx);
+                    prefix, {}, null, ctx);
             } finally {
                 await fsExtra.remove(tmpDir.path);
                 logger.debug(`${prefix}Deleted temporary directory.`);
@@ -278,10 +280,11 @@ async function runLoop(loop, options, ctx) {
  * @param {string} cwd
  * @param {string} onerror
  * @param {string} prefix
+ * @param {object} env
  * @param {object} stdio
  * @param {Context} ctx
  */
-async function runCommands(commands, cwd, onerror, prefix, stdio, ctx) {
+async function runCommands(commands, cwd, onerror, prefix, env, stdio, ctx) {
     logger.debug('Executing in directory:', cwd);
     for (const command of commands) {
         if (!ctx.running) {
@@ -293,7 +296,7 @@ async function runCommands(commands, cwd, onerror, prefix, stdio, ctx) {
             logger.info(`${prefix}Executing script...`);
         }
         try {
-            await command.run(cwd, stdio);
+            await command.run(cwd, env, stdio);
         } catch (e) {
             logger.silly('Command failed:', e);
             if (e.code === 'ENOENT') {
@@ -418,6 +421,7 @@ class Call {
             throw new Error('call: no commands given!');
         }
         this.path = call.path;
+        this.methods = parseMethods(call.methods);
         this.headers = parseHeaders(call.headers);
         this.stream = parseBoolean(call.stream, false);
         this.cwd = call.cwd || null;
@@ -425,17 +429,30 @@ class Call {
     }
 
     async call(request, response, ctx) {
-        const prefix = `Call ${this.path}: `;
+        if (this.methods.length && this.methods.indexOf(request.method) < 0) {
+            response.writeHead(405, http.STATUS_CODES[405]);
+            response.end(`Unsupported method: ${request.method}`);
+            return;
+        }
         for (const [name, value] of Object.entries(this.headers)) {
             response.setHeader(name, value);
         }
+        const env = {};
+        env['REQUEST_METHOD'] = request.method;
+        env['REQUEST_URI'] = request.url;
+        env['REMOTE_ADDR'] = request.socket.address().address;
+        for (const [name, value] of Object.entries(request.headers)) {
+            const normalized = name.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+            env[`HTTP_${normalized}`] = value.toString();
+        }
+        const prefix = `Call ${this.path}: `;
         if (this.stream) {
             const stdio = {
                 'stdout': (data) => response.write(data),
                 'stderr': (data) => response.write(data)
             };
             response.writeHead(200, http.STATUS_CODES[200]);
-            await runCommands(this.commands, this.cwd, 'continue', prefix, stdio, ctx);
+            await runCommands(this.commands, this.cwd, 'continue', prefix, env, stdio, ctx);
         } else {
             let str = '';
             const stdio = {
@@ -444,7 +461,7 @@ class Call {
             };
             let err = null;
             try {
-                await runCommands(this.commands, this.cwd, 'fail', prefix, stdio, ctx);
+                await runCommands(this.commands, this.cwd, 'fail', prefix, env, stdio, ctx);
             } catch (e) {
                 err = e;
             }
@@ -506,10 +523,11 @@ class Command {
         }
     }
 
-    async run(cwd, stdio) {
+    async run(cwd, env, stdio) {
         const shell = (typeof this.script === 'string' || typeof this.command === 'string');
         const options = {
             'cwd': cwd,
+            'env': Object.assign({}, process.env, env),
             'stdio': ['ignore', this.stdout, this.stderr],
             'shell': shell
         };
@@ -605,6 +623,26 @@ function parseStdio(value) {
         return value;
     } else {
         throw new Error(`invalid stdio value: ${value}`);
+    }
+}
+
+function parseMethods(methods) {
+    if (!methods) {
+        return ['GET'];
+    } else if (Array.isArray(methods)) {
+        if (methods.length === 0 || (methods.length === 1 && methods[0] === '*')) {
+            // accept all methods
+            return [];
+        } else {
+            return methods.map((str) => {
+                if (typeof str !== 'string') {
+                    throw new Error(`method is not a string: ${str}`);
+                }
+                return str.toUpperCase();
+            });
+        }
+    } else {
+        throw new Error(`invalid methods value: ${methods}`);
     }
 }
 

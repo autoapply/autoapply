@@ -140,6 +140,18 @@ call:
   commands: [ 'echo world' ]
 ```
 
+The following environment variables will be set for each call:
+
+- `REQUEST_METHOD` - the HTTP method, for example `GET` or `POST`
+- `REQUEST_URI` - the requested URI, for example `/echo1`
+- `REMOTE_ADDR` - the IP address of the requesting client
+
+Additionally, all request HTTP headers will be available as environment
+variables. To improve compatibility with existing shells, the header names
+will be prefixed with `HTTP_`, translated to uppercase and all special
+characters will be replaced with `_`.
+For example, the HTTP header `User-Agent` will be available as `HTTP_USER_AGENT`.
+
 ### `path`
 
 The path to bind this call to:
@@ -170,6 +182,32 @@ You could also pass the headers as an object:
 ```yaml
   headers:
     Content-Type: text/plain; charset=utf-8
+```
+
+### `methods`
+
+List of HTTP methods that this call accepts.
+By default, only `GET` methods are supported, requests with any other method
+will be answered by HTTP error 405 (method not allowed).
+
+To support `GET` and `POST`:
+
+```yaml
+call:
+- path: /clear
+  methods: ['GET', 'POST']
+  commands:
+  - rm -rf /tmp/*
+```
+
+If you want to support all methods:
+
+```yaml
+call:
+- path: /check
+  methods: ['*']
+  commands:
+  - echo $HTTP_METHOD
 ```
 
 ### `stream`

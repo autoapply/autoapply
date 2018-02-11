@@ -15,6 +15,10 @@ ENV KUBECTL_URL "https://storage.googleapis.com/kubernetes-release/release/v1.9.
 RUN curl --fail "${KUBECTL_URL}" > /usr/local/bin/kubectl \
     && chmod +x /usr/local/bin/kubectl
 
+ENV SOPS_URL "https://github.com/mozilla/sops/releases/download/3.0.2/sops-3.0.2.linux"
+RUN curl --fail -L "${SOPS_URL}" > /usr/local/bin/sops \
+    && chmod +x /usr/local/bin/sops
+
 RUN yarn global add 'autoapply@0.7.0'
 
 USER autoapply

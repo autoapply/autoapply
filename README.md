@@ -9,6 +9,7 @@ Automatically apply changes to a Kubernetes cluster.
 - All resource files are stored in Git, which means there is a single source of truth
   for the state of your application.
 - When editing resource files, the changes can be documented and merged using your standard Git workflow.
+- Use [sops](https://github.com/mozilla/sops) to store Kubernetes secrets directly in the repository.
 
 ---
 
@@ -54,8 +55,8 @@ For more information, see the [documentation](docs/configuration.md).
 ## Docker tags
 
 * `latest` provides a minimal image with just *autoapply* installed ([Dockerfile](build/Dockerfile))
-* `kubectl` also provides *git*, *kubectl* and *[dockerize](https://github.com/jwilder/dockerize)* ([Dockerfile](build/kubectl/Dockerfile))
-* `helm` also provides *git* and *[helm](https://github.com/kubernetes/helm)* ([Dockerfile](build/helm/Dockerfile))
+* `kubectl` also provides *git*, *kubectl*, *sops* and *[dockerize](https://github.com/jwilder/dockerize)* ([Dockerfile](build/kubectl/Dockerfile))
+* `helm` also provides *git*, *sops* and *[helm](https://github.com/kubernetes/helm)* ([Dockerfile](build/helm/Dockerfile))
 * `jekyll` also provides *ruby*, *java*, *git* and *[jekyll](https://jekyllrb.com)* ([Dockerfile](build/jekyll/Dockerfile))
 
 ## Related projects

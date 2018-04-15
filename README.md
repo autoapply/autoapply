@@ -9,7 +9,7 @@ Automatically apply changes to a Kubernetes cluster.
 - All resource files are stored in Git, which means there is a single source of truth
   for the state of your application.
 - When editing resource files, the changes can be documented and merged using your standard Git workflow.
-- Use [sops](https://github.com/mozilla/sops) to store Kubernetes secrets directly in the repository.
+- You can use [sops](https://github.com/mozilla/sops) to store Kubernetes secrets directly in the repository.
 
 ---
 
@@ -61,11 +61,16 @@ For more information, see the [documentation](docs/configuration.md).
 
 ## Related projects
 
+- [kube-applier](https://github.com/box/kube-applier) is very similar, but less flexible.
+  It doesn't support Helm or custom workflows like using sops.
 - [Keel](https://github.com/keel-hq/keel) provides fully automated updates, but only changes
   the container image version, nothing else.
 - [Helm](https://github.com/kubernetes/helm) does not provide automated updates, but still offers
   a consistent way to release new versions. However, you will still need a way to manage the values
   that will be used to create releases from charts.
+- There is a blog post by Weaveworks about
+  [GitOps and Kubernetes](https://www.weave.works/blog/gitops-high-velocity-cicd-for-kubernetes),
+  which gives a good overview of the topic.
 
 ## License
 

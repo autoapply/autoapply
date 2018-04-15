@@ -207,7 +207,7 @@ call:
 - path: /check
   methods: ['*']
   commands:
-  - echo $HTTP_METHOD
+  - echo $REQUEST_METHOD
 ```
 
 ### `stream`

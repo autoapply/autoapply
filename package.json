@@ -27,8 +27,7 @@
     "lint": "eslint .",
     "test": "yarn lint && nyc mocha --timeout=8000 --check-leaks",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
-    "upload": "yarn test && yarn publish",
-    "prepublish": "sed -i '.bak' 's;(docs/overview.svg);(https://cdn.rawgit.com/pascalgn/autoapply/master/docs/overview.svg);g' README.md"
+    "upload": "yarn test && yarn publish"
   },
   "devDependencies": {
     "chai": "^4.1.2",

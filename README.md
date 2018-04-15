@@ -4,7 +4,7 @@
 
 Automatically apply changes to a Kubernetes cluster.
 
-![Technical overview](docs/overview.svg)
+![Technical overview](https://cdn.rawgit.com/pascalgn/autoapply/ac5cdbf/docs/overview.svg)
 
 - All resource files are stored in Git, which means there is a single source of truth
   for the state of your application.

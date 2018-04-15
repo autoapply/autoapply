@@ -11,15 +11,15 @@ RUN apk add --no-cache curl git openssh-client tar openssl \
 
 COPY --from=golang /go/bin/dockerize /usr/local/bin/
 
-ENV KUBECTL_URL "https://storage.googleapis.com/kubernetes-release/release/v1.9.0/bin/linux/amd64/kubectl"
+ENV KUBECTL_URL "https://storage.googleapis.com/kubernetes-release/release/v1.10.0/bin/linux/amd64/kubectl"
 RUN curl --fail "${KUBECTL_URL}" > /usr/local/bin/kubectl \
     && chmod +x /usr/local/bin/kubectl
 
-ENV SOPS_URL "https://github.com/mozilla/sops/releases/download/3.0.2/sops-3.0.2.linux"
+ENV SOPS_URL "https://github.com/mozilla/sops/releases/download/3.0.3/sops-3.0.3.linux"
 RUN curl --fail -L "${SOPS_URL}" > /usr/local/bin/sops \
     && chmod +x /usr/local/bin/sops
 
-RUN yarn global add 'autoapply@0.7.1'
+RUN yarn global add 'autoapply@0.7.2'
 
 USER autoapply
 WORKDIR /home/autoapply

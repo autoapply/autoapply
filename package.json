@@ -1,6 +1,6 @@
 {
   "name": "autoapply",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "Automatically apply changes to a Kubernetes cluster",
   "license": "MIT",
   "author": "Pascal",
@@ -27,12 +27,13 @@
     "lint": "eslint .",
     "test": "yarn lint && nyc mocha --timeout=8000 --check-leaks",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
-    "upload": "yarn test && yarn publish --non-interactive"
+    "upload": "yarn test && yarn publish",
+    "prepublish": "sed -i '.bak' 's;(docs/overview.svg);(https://cdn.rawgit.com/pascalgn/autoapply/master/docs/overview.svg);g' README.md"
   },
   "devDependencies": {
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
-    "chai-http": "^3.0.0",
+    "chai-http": "^4.0.0",
     "coveralls": "^3.0.0",
     "eslint": "^4.16.0",
     "mocha": "^5.0.0",

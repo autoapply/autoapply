@@ -26,7 +26,7 @@ For private repositories, you can use [deploy keys](docs/deploy-keys.md).
 Add the desired Kubernetes resource files to the repository, for example [nginx.yaml](docs/examples/nginx.yaml),
 and make sure all files have been pushed.
 
-Now download [kubernetes-simple.yaml](docs/examples/kubernetes-simple.yaml) and change 
+Now download [kubernetes-simple.yaml](docs/examples/kubernetes-simple.yaml) and change
 `https://github.com/pascalgn/hello-world` to the URL of the repository you just created.
 Then create the autoapply deployment in your cluster:
 
@@ -68,7 +68,9 @@ For more information, see the [documentation](docs/configuration.md).
 - [Helm](https://github.com/kubernetes/helm) does not provide automated updates, but still offers
   a consistent way to release new versions. However, you will still need a way to manage the values
   that will be used to create releases from charts.
-- There is a blog post by Weaveworks about
+- [Flux](https://github.com/weaveworks/flux) is also very similar, but goes a step further and
+  uses an abstraction on top of the existing Kubernetes model.
+  There is also a blog post by Weaveworks about
   [GitOps and Kubernetes](https://www.weave.works/blog/gitops-high-velocity-cicd-for-kubernetes),
   which gives a good overview of the topic.
 

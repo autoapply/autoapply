@@ -1,15 +1,15 @@
 # autoapply
 
-[![Build Status](https://img.shields.io/travis/pascalgn/autoapply.svg?style=flat-square)](https://travis-ci.org/pascalgn/autoapply) [![Coverage status](https://img.shields.io/coveralls/github/pascalgn/autoapply.svg?style=flat-square)](https://coveralls.io/github/pascalgn/autoapply) [![Docker build status](https://img.shields.io/docker/build/pascalgn/autoapply.svg?style=flat-square)](https://hub.docker.com/r/pascalgn/autoapply/) [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/pascalgn/autoapply/blob/master/LICENSE)
+[![Build Status](https://img.shields.io/travis/autoapply/autoapply.svg?style=flat-square)](https://travis-ci.org/autoapply/autoapply) [![Coverage status](https://img.shields.io/coveralls/github/autoapply/autoapply.svg?style=flat-square)](https://coveralls.io/github/autoapply/autoapply) [![Docker build status](https://img.shields.io/docker/build/autoapply/autoapply.svg?style=flat-square)](https://hub.docker.com/r/autoapply/autoapply/) [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/autoapply/autoapply/blob/master/LICENSE)
 
 Automatically apply changes to a Kubernetes cluster.
 
-![Technical overview](https://cdn.rawgit.com/pascalgn/autoapply/ac5cdbf/docs/overview.svg)
+![Technical overview](https://cdn.rawgit.com/autoapply/autoapply/ac5cdbf/docs/overview.svg)
 
 - All resource files are stored in Git, which means there is a single source of truth
   for the state of your application.
 - When editing resource files, the changes can be documented and merged using your standard Git workflow.
-- You can use [sops](https://github.com/mozilla/sops) to store Kubernetes secrets directly in the repository.
+- You can use [yaml-crypt](https://github.com/autoapply/yaml-crypt) or [sops](https://github.com/mozilla/sops) to store Kubernetes secrets directly in the repository.
 
 ---
 
@@ -27,7 +27,7 @@ Add the desired Kubernetes resource files to the repository, for example [nginx.
 and make sure all files have been pushed.
 
 Now download [kubernetes-simple.yaml](docs/examples/kubernetes-simple.yaml) and change
-`https://github.com/pascalgn/hello-world` to the URL of the repository you just created.
+`https://github.com/autoapply/hello-world` to the URL of the repository you just created.
 Then create the autoapply deployment in your cluster:
 
 ```
@@ -46,18 +46,18 @@ A basic configuration file looks like this:
 ```yaml
 loop:
   commands:
-  - git clone --depth 1 https://github.com/pascalgn/hello-world workspace/
+  - git clone --depth 1 https://github.com/autoapply/hello-world workspace/
   - kubectl apply -f workspace/
 ```
 
 For more information, see the [documentation](docs/configuration.md).
 
-## Docker tags
+## Docker images
 
-* `latest` provides a minimal image with just *autoapply* installed ([Dockerfile](build/Dockerfile))
-* `kubectl` also provides *git*, *kubectl*, *[sops](https://github.com/mozilla/sops)* and *[dockerize](https://github.com/jwilder/dockerize)* ([Dockerfile](build/kubectl/Dockerfile))
-* `helm` also provides *git*, *[sops](https://github.com/mozilla/sops)* and *[helm](https://github.com/kubernetes/helm)* ([Dockerfile](build/helm/Dockerfile))
-* `jekyll` also provides *ruby*, *java*, *git* and *[jekyll](https://jekyllrb.com)* ([Dockerfile](build/jekyll/Dockerfile))
+* `autoapply/autoapply:latest` provides a minimal image with just *autoapply* installed ([Dockerfile](build/Dockerfile))
+* `autoapply/autoapply:kubectl` also provides *git*, *kubectl*, *[sops](https://github.com/mozilla/sops)* and *[dockerize](https://github.com/jwilder/dockerize)* ([Dockerfile](build/kubectl/Dockerfile))
+* `autoapply/autoapply:helm` also provides *git*, *[sops](https://github.com/mozilla/sops)* and *[helm](https://github.com/kubernetes/helm)* ([Dockerfile](build/helm/Dockerfile))
+* `autoapply/autoapply:jekyll` also provides *ruby*, *java*, *git* and *[jekyll](https://jekyllrb.com)* ([Dockerfile](build/jekyll/Dockerfile))
 
 ## Related projects
 

@@ -2,13 +2,11 @@
 
 'use strict';
 
-const util = require('util');
 const http = require('http');
 const process = require('process');
 
 const winston = require('winston');
 const fsExtra = require('fs-extra');
-const dateFormat = require('date-format');
 const argparse = require('argparse');
 const yaml = require('js-yaml');
 const tmpPromise = require('tmp-promise');
@@ -17,7 +15,7 @@ require('colors');
 
 require('pkginfo')(module);
 
-const logger = new winston.Logger();
+const logger = winston.createLogger();
 
 /**
  * @param {string[]|*} argv the program arguments
@@ -26,20 +24,12 @@ const logger = new winston.Logger();
 async function main(argv = null) {
     logger.configure({
         level: process.env.LOG_LEVEL || 'info',
-        transports: [
-            new winston.transports.Console({
-                formatter: (msg) => {
-                    let s = dateFormat.asString() + ' ' + winston.config.colorize(msg.level);
-                    if (msg.message) {
-                        s += ' ' + msg.message;
-                    }
-                    if (msg.meta && Object.keys(msg.meta).length) {
-                        s += ' ' + util.inspect(msg.meta);
-                    }
-                    return s;
-                }
-            })
-        ]
+        format: winston.format.combine(
+            winston.format.timestamp(),
+            winston.format.colorize(),
+            winston.format.printf((info) => `${info.timestamp} ${info.level} ${info.message}`)
+        ),
+        transports: [new winston.transports.Console()]
     });
 
     const parser = new argparse.ArgumentParser({

@@ -27,6 +27,7 @@ async function main(argv = null) {
         format: winston.format.combine(
             winston.format.timestamp(),
             winston.format.colorize(),
+            winston.format.splat(),
             winston.format.printf((info) => `${info.timestamp} ${info.level} ${info.message}`)
         ),
         transports: [new winston.transports.Console()]
@@ -71,7 +72,7 @@ async function main(argv = null) {
             throw new Error('configuration is empty!');
         }
         if (args.debug) {
-            logger.debug('Loaded configuration:', JSON.stringify(config, null, 2));
+            logger.debug('Loaded configuration: %s', JSON.stringify(config, null, 2));
         }
     } catch (e) {
         if (args.debug) {
@@ -97,7 +98,7 @@ function setupSignalHandler(ctx) {
         if ((now - track.time) > 5000) {
             logger.info('Signal SIGINT received, shutting down...');
             ctx.stop().catch((err) => {
-                logger.error('Failed to shut down:', err.message || 'unknown error!');
+                logger.error('Failed to shut down: %s', err.message || 'unknown error!');
             });
         } else {
             logger.warn('Terminated.');
@@ -109,7 +110,7 @@ function setupSignalHandler(ctx) {
 
 function catchLoops(ctx) {
     ctx.loops.forEach((loop) => loop.promise = loop.promise.catch((err) => {
-        logger.warn('Error while running loop:', err.message || 'unknown error!');
+        logger.warn('Error while running loop: %s', err.message || 'unknown error!');
     }));
 }
 
@@ -188,7 +189,7 @@ function startServer(port, ctx) {
  * @param {Context} ctx
  */
 async function handleRequest(request, response, ctx) {
-    logger.debug('Request received:', request.method, request.url);
+    logger.debug('Request received: %s %s', request.method, request.url);
 
     let handler = null;
     if (request.url === '/healthz') {
@@ -214,7 +215,8 @@ async function handleRequest(request, response, ctx) {
         try {
             await handler(request, response, ctx);
         } catch (e) {
-            logger.info('Error handling request:', request.url, e.message || 'unknown error!');
+            logger.info('Error handling request: %s -- %s', request.url,
+                e.message || 'unknown error!');
         } finally {
             response.end();
         }
@@ -275,20 +277,20 @@ async function runLoop(loop, options, ctx) {
  * @param {Context} ctx
  */
 async function runCommands(commands, cwd, onerror, prefix, env, stdio, ctx) {
-    logger.debug('Executing in directory:', cwd);
+    logger.debug('Executing in directory: %s', cwd);
     for (const command of commands) {
         if (!ctx.running) {
             break;
         }
         if (command.command) {
-            logger.info(`${prefix}Executing command:`, JSON.stringify(command.command));
+            logger.info(`${prefix}Executing command: %s`, JSON.stringify(command.command));
         } else {
             logger.info(`${prefix}Executing script...`);
         }
         try {
             await command.run(cwd, env, stdio);
         } catch (e) {
-            logger.silly('Command failed:', e);
+            logger.silly('Command failed: %s', e);
             if (e.code === 'ENOENT') {
                 logger.error('Command not found!');
             } else if (e.message) {
@@ -331,7 +333,7 @@ class Context {
             promise = new Promise((resolve) => {
                 this.server.close((err) => {
                     if (err) {
-                        logger.warn('Could not stop server:', err.message || 'unknown error!');
+                        logger.warn('Could not stop server: %s', err.message || 'unknown error!');
                     }
                     this.server = null;
                     resolve();
@@ -594,7 +596,7 @@ function parseSleep(value) {
     if (value === 0 || value === '0') {
         return 0;
     } else if (!value || value < 0) {
-        logger.debug('using default sleep value!');
+        logger.debug('Using default sleep value!');
         return 60;
     } else {
         const sleep = parseFloat(value);

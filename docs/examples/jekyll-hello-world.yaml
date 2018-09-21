@@ -10,7 +10,7 @@ spec:
     spec:
       containers:
         - name: jekyll
-          image: pascalgn/autoapply:jekyll
+          image: autoapply/autoapply:jekyll
           args: ["env:AUTOAPPLY_CONFIG"]
           env:
             - name: AUTOAPPLY_CONFIG

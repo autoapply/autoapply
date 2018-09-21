@@ -1,7 +1,9 @@
 # Hello, World!
 
 This is a step-by-step introduction to autoapply.
-For a quick overview, see the [project homepage](https://github.com/pascalgn/autoapply#usage).
+For a quick overview, see the [project homepage](https://github.com/autoapply/autoapply#usage).
+
+For an automated way, see [autosetup](https://github.com/autoapply/autosetup).
 
 ## 1. Prerequisites
 
@@ -26,7 +28,7 @@ Create a new empty Git repository. The repository should be publicly available,
 for example on [GitHub](https://github.com) or [GitLab](https://gitlab.com).
 If you want to use a private repository, check out [deploy keys](deploy-keys.md).
 
-For this guide, we will use `https://github.com/pascalgn/hello-world`
+For this guide, we will use `https://github.com/autoapply/hello-world`
 as the repository URL, so make sure to adapt the examples accordingly!
 
 ## 3. Start autoapply
@@ -46,7 +48,7 @@ spec:
     spec:
       containers:
       - name: autoapply
-          image: pascalgn/autoapply:kubectl
+          image: autoapply/autoapply:kubectl
           args: ['env:AUTOAPPLY_CONFIG']
           env:
           - name: AUTOAPPLY_CONFIG
@@ -54,7 +56,7 @@ spec:
               loop:
                 commands:
                 # Make sure to use the URL of the repository you just created instead!
-                - git clone --depth 1 https://github.com/pascalgn/hello-world workspace/
+                - git clone --depth 1 https://github.com/autoapply/hello-world workspace/
                 - kubectl apply -f workspace/
 ```
 
@@ -82,7 +84,7 @@ As the repository is currently empty, autoapply will output an error:
 # (make sure to use the pod name from the previous command)
 $ kubectl logs po/autoapply-7218c935d-rh9t2
 info Running loop commands...
-info Loop: Executing command: "git clone --depth 1 https://github.com/pascalgn/hello-world workspace/"
+info Loop: Executing command: "git clone --depth 1 https://github.com/autoapply/hello-world workspace/"
 Cloning into 'workspace'...
 warning: You appear to have cloned an empty repository.
 done.

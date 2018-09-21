@@ -37,6 +37,8 @@ $ kubectl apply -f kubernetes-simple.yaml
 Now, autoapply will download the resource files from your repository and apply them to the cluster.
 When you update the repository, autoapply will fetch the new files and update the cluster accordingly.
 
+To automatically setup autoapply in a cluster, see the related [autosetup](https://github.com/autoapply/autosetup) project.
+
 For more detailed instructions, see [Hello, World!](docs/hello-world.md)
 
 ## Configuration
@@ -73,6 +75,8 @@ For more information, see the [documentation](docs/configuration.md).
   There is also a blog post by Weaveworks about
   [GitOps and Kubernetes](https://www.weave.works/blog/gitops-high-velocity-cicd-for-kubernetes),
   which gives a good overview of the topic.
+- [kube-backup](https://github.com/pieterlange/kube-backup) is for the opposite way and regularly
+  adds all Kubernetes objects into the configured git repository.
 
 ## License
 

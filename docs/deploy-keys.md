@@ -2,6 +2,9 @@
 
 To access private repositories, _deploy keys_ can be used.
 
+This document describes manual steps to setup autoapply.
+For an automated way, see [autosetup](https://github.com/autoapply/autosetup).
+
 ## 1. Generate a new SSH key
 
 First you will need to create a new SSH key.
@@ -29,13 +32,13 @@ GitLab (cloud and self-hosted) also supports [deploy keys](https://docs.gitlab.c
 
 Download the file [kubernetes-ssh.yaml](examples/kubernetes-ssh.yaml) and make sure to configure the secret correctly:
 
-    $ curl 'https://raw.githubusercontent.com/pascalgn/autoapply/master/docs/examples/kubernetes-ssh.yaml' > kubernetes-ssh.yaml
+    $ curl 'https://raw.githubusercontent.com/autoapply/autoapply/master/docs/examples/kubernetes-ssh.yaml' > kubernetes-ssh.yaml
     $ ssh-keyscan -t rsa github.com > known_hosts
     $ kubectl create secret generic autoapply-ssh-secret --dry-run --from-file=id_rsa,known_hosts -o yaml
 
 Edit the downloaded copy of `kubernetes-ssh.yaml` and replace the values for `id_rsa` and `known_hosts`
 with the values that have just been printed by the _kubectl_ command.
-Then replace the text `https://github.com/pascalgn/hello-world` in the file with the URL of your repository.
+Then replace the text `https://github.com/autoapply/hello-world` in the file with the URL of your repository.
 
 Now you can start autoapply:
 

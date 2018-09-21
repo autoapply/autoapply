@@ -1,4 +1,4 @@
-# See https://github.com/pascalgn/autoapply/blob/master/docs/hello-world.md
+# See https://github.com/autoapply/autoapply/blob/master/docs/hello-world.md
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -11,14 +11,14 @@ spec:
     spec:
       containers:
         - name: autoapply
-          image: pascalgn/autoapply:kubectl
+          image: autoapply/autoapply:kubectl
           args: ['env:AUTOAPPLY_CONFIG']
           env:
             - name: AUTOAPPLY_CONFIG
               value: |
                 loop:
                   commands:
-                    - git clone --depth 1 https://github.com/pascalgn/hello-world workspace/
+                    - git clone --depth 1 https://github.com/autoapply/hello-world workspace/
                     - kubectl apply -f workspace/
                 server:
                   enabled: true

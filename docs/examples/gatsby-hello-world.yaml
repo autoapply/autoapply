@@ -10,7 +10,7 @@ spec:
     spec:
       containers:
         - name: gatsby
-          image: pascalgn/autoapply:latest
+          image: autoapply/autoapply:latest
           args: ["env:AUTOAPPLY_CONFIG"]
           env:
             - name: AUTOAPPLY_CONFIG

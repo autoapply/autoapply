@@ -6,7 +6,7 @@ RUN apk add --no-cache git \
 FROM node:alpine
 
 RUN apk add --no-cache curl git openssh-client tar openssl \
-    && yarn global add yaml-crypt slack-cli yaml-cli \
+    && yarn global add yaml-crypt \
     && adduser -D -g autoapply autoapply
 
 COPY --from=golang /go/bin/dockerize /usr/local/bin/
@@ -15,11 +15,11 @@ ENV KUBECTL_URL "https://storage.googleapis.com/kubernetes-release/release/v1.11
 RUN curl --fail "${KUBECTL_URL}" > /usr/local/bin/kubectl \
     && chmod +x /usr/local/bin/kubectl
 
-ENV SOPS_URL "https://github.com/mozilla/sops/releases/download/3.0.5/sops-3.0.5.linux"
+ENV SOPS_URL "https://github.com/mozilla/sops/releases/download/3.1.0/sops-3.1.0.linux"
 RUN curl --fail -L "${SOPS_URL}" > /usr/local/bin/sops \
     && chmod +x /usr/local/bin/sops
 
-RUN yarn global add 'autoapply@0.7.3'
+RUN yarn global add 'autoapply@0.7.4'
 
 USER autoapply
 WORKDIR /home/autoapply

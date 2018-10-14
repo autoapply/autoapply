@@ -1,9 +1,9 @@
 FROM node:alpine
 
-RUN adduser -D -g autoapply autoapply
+RUN adduser -D -g autoapply autoapply && apk add --no-cache tini
 
-RUN yarn global add 'autoapply@0.7.4'
+RUN yarn global add 'autoapply@0.8.0'
 
 USER autoapply
 WORKDIR /home/autoapply
-ENTRYPOINT [ "autoapply" ]
+ENTRYPOINT [ "/sbin/tini", "--", "autoapply" ]

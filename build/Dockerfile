@@ -2,7 +2,9 @@ FROM node:alpine
 
 RUN adduser -D -g autoapply autoapply && apk add --no-cache tini
 
-RUN yarn global add 'autoapply@0.8.0'
+COPY . /tmp/src/
+RUN yarn global add "file:/tmp/src" \
+    && rm -rf /tmp/src
 
 USER autoapply
 WORKDIR /home/autoapply

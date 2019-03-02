@@ -59,7 +59,6 @@ For more information, see the [documentation](docs/configuration.md).
 * `autoapply/autoapply:latest` provides a minimal image with just *autoapply* installed ([Dockerfile](build/Dockerfile))
 * `autoapply/autoapply:kubectl` also provides *git*, *kubectl*, *[sops](https://github.com/mozilla/sops)* and *[dockerize](https://github.com/jwilder/dockerize)* ([Dockerfile](build/kubectl/Dockerfile))
 * `autoapply/autoapply:helm` also provides *git*, *[sops](https://github.com/mozilla/sops)* and *[helm](https://github.com/kubernetes/helm)* ([Dockerfile](build/helm/Dockerfile))
-* `autoapply/autoapply:jekyll` also provides *ruby*, *java*, *git* and *[jekyll](https://jekyllrb.com)* ([Dockerfile](build/jekyll/Dockerfile))
 
 ## Related projects
 

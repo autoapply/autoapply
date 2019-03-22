@@ -1,68 +1,20 @@
-"use strict";
-
 const mocha = require("mocha");
 const describe = mocha.describe;
 const it = mocha.it;
 const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
-const chaiHttp = require("chai-http");
 const expect = chai.expect;
+const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
+const chaiHttp = require("chai-http");
 chai.use(chaiHttp);
 
 const path = require("path");
-const process = require("process");
-const yaml = require("js-yaml");
 const tmp = require("tmp");
 const fsExtra = require("fs-extra");
 
-const autoapply = require("../bin/autoapply");
-
-process.env.LOG_LEVEL = "-1";
-
-function interceptStdio() {
-  const stdout = process.stdout.write;
-  const stderr = process.stderr.write;
-  process.stdout.write = () => {};
-  process.stderr.write = () => {};
-  return () => {
-    process.stdout.write = stdout;
-    process.stderr.write = stderr;
-  };
-}
+const { run } = require("../lib/autoapply");
 
 describe("autoapply", () => {
-  it("should execute the commands given in the environment variable", () => {
-    const envName = `AUTOAPPLY_TEST_${new Date().getTime()}`;
-    process.env.LOG_LEVEL = "info";
-    process.env[envName] =
-      "loop:\n  onerror: fail\n  commands: [ 'ls nonexisting' ]";
-    const reset = interceptStdio();
-    return autoapply
-      .main(["-d", `env:${envName}`])
-      .then(ctx => ctx.stop())
-      .then(() => reset())
-      .then(() => process.removeAllListeners("SIGINT"))
-      .then(() => (process.env.LOG_LEVEL = "-1"));
-  });
-
-  it("should execute the commands given in the config file", () => {
-    const d = tmp.dirSync();
-    const config = {
-      loop: {
-        onerror: "fail",
-        commands: [["false"]]
-      }
-    };
-    const configFile = path.join(d.name, "config.yaml");
-    fsExtra.writeFileSync(configFile, yaml.safeDump(config));
-    return autoapply
-      .main([configFile])
-      .then(ctx => ctx.stop())
-      .then(() => process.removeAllListeners("SIGINT"))
-      .then(() => fsExtra.removeSync(d.name));
-  });
-
   it("should fail when an invalid onerror is given", () => {
     const config = {
       loop: {
@@ -70,7 +22,7 @@ describe("autoapply", () => {
         onerror: "x"
       }
     };
-    return expect(autoapply.run(config)).to.be.rejectedWith(
+    return expect(run(config)).to.be.rejectedWith(
       Error,
       "invalid onerror value: x"
     );
@@ -83,7 +35,7 @@ describe("autoapply", () => {
         sleep: "x"
       }
     };
-    return expect(autoapply.run(config, { loops: 1 })).to.be.rejectedWith(
+    return expect(run(config, { loops: 1 })).to.be.rejectedWith(
       Error,
       "invalid sleep value: x"
     );
@@ -100,14 +52,14 @@ describe("autoapply", () => {
         ]
       }
     };
-    return expect(autoapply.run(config, { loops: 1 })).to.be.rejectedWith(
+    return expect(run(config, { loops: 1 })).to.be.rejectedWith(
       Error,
       "invalid stdio"
     );
   });
 
   it("should fail when no commands are given", () => {
-    return expect(autoapply.run({})).to.be.rejectedWith(
+    return expect(run({})).to.be.rejectedWith(
       Error,
       "invalid configuration, neither loop nor call section given!"
     );
@@ -119,10 +71,7 @@ describe("autoapply", () => {
         commands: ["ls", [""]]
       }
     };
-    return expect(autoapply.run(config)).to.be.rejectedWith(
-      Error,
-      "invalid command: "
-    );
+    return expect(run(config)).to.be.rejectedWith(Error, "invalid command: ");
   });
 
   it("should fail when a blank command is given", () => {
@@ -131,10 +80,7 @@ describe("autoapply", () => {
         commands: [" "]
       }
     };
-    return expect(autoapply.run(config)).to.be.rejectedWith(
-      Error,
-      "command is empty!"
-    );
+    return expect(run(config)).to.be.rejectedWith(Error, "command is empty!");
   });
 
   it("should fail when a blank script is given", () => {
@@ -143,10 +89,7 @@ describe("autoapply", () => {
         commands: [{ script: " " }]
       }
     };
-    return expect(autoapply.run(config)).to.be.rejectedWith(
-      Error,
-      "script is empty!"
-    );
+    return expect(run(config)).to.be.rejectedWith(Error, "script is empty!");
   });
 
   it("should fail when an invalid command object is given", () => {
@@ -155,7 +98,7 @@ describe("autoapply", () => {
         commands: [{}]
       }
     };
-    return expect(autoapply.run(config)).to.be.rejectedWith(
+    return expect(run(config)).to.be.rejectedWith(
       Error,
       "invalid command: undefined"
     );
@@ -167,10 +110,7 @@ describe("autoapply", () => {
         commands: [{ script: [] }]
       }
     };
-    return expect(autoapply.run(config)).to.be.rejectedWith(
-      Error,
-      "invalid script"
-    );
+    return expect(run(config)).to.be.rejectedWith(Error, "invalid script");
   });
 
   it("should fail when both command and script are given", () => {
@@ -184,7 +124,7 @@ describe("autoapply", () => {
         ]
       }
     };
-    return expect(autoapply.run(config)).to.be.rejectedWith(
+    return expect(run(config)).to.be.rejectedWith(
       Error,
       "cannot combine command and script!"
     );
@@ -196,7 +136,7 @@ describe("autoapply", () => {
         commands: ["date"]
       }
     };
-    return expect(autoapply.run(config)).to.be.rejectedWith(
+    return expect(run(config)).to.be.rejectedWith(
       Error,
       "call: no path given!"
     );
@@ -210,7 +150,7 @@ describe("autoapply", () => {
         commands: ["date"]
       }
     };
-    return expect(autoapply.run(config)).to.be.rejectedWith(
+    return expect(run(config)).to.be.rejectedWith(
       Error,
       "invalid header value: a"
     );
@@ -224,7 +164,7 @@ describe("autoapply", () => {
         commands: ["date"]
       }
     };
-    return expect(autoapply.run(config)).to.be.rejectedWith(
+    return expect(run(config)).to.be.rejectedWith(
       Error,
       "header value is not a string: 1"
     );
@@ -238,7 +178,7 @@ describe("autoapply", () => {
         commands: ["date"]
       }
     };
-    return expect(autoapply.run(config)).to.be.rejectedWith(
+    return expect(run(config)).to.be.rejectedWith(
       Error,
       "header name is not a string: 1"
     );
@@ -252,7 +192,7 @@ describe("autoapply", () => {
         commands: ["date"]
       }
     };
-    return expect(autoapply.run(config)).to.be.rejectedWith(
+    return expect(run(config)).to.be.rejectedWith(
       Error,
       "header value is not a string: 1"
     );
@@ -266,7 +206,7 @@ describe("autoapply", () => {
         commands: ["date"]
       }
     };
-    return expect(autoapply.run(config)).to.be.rejectedWith(
+    return expect(run(config)).to.be.rejectedWith(
       Error,
       "invalid methods value: 1"
     );
@@ -280,7 +220,7 @@ describe("autoapply", () => {
         commands: ["date"]
       }
     };
-    return expect(autoapply.run(config)).to.be.rejectedWith(
+    return expect(run(config)).to.be.rejectedWith(
       Error,
       "method is not a string: 1"
     );
@@ -300,7 +240,7 @@ describe("autoapply", () => {
         commands: ["ls"]
       }
     };
-    return expect(autoapply.run(config)).to.be.rejectedWith(
+    return expect(run(config)).to.be.rejectedWith(
       Error,
       /failed with code 127/
     );
@@ -323,7 +263,7 @@ describe("autoapply", () => {
         ]
       }
     };
-    return autoapply.run(config, { loops: 1 }).then(ctx => ctx.wait());
+    return run(config, { loops: 1 }).then(ctx => ctx.wait());
   });
 
   it("should execute the given script", () => {
@@ -338,7 +278,7 @@ describe("autoapply", () => {
         ]
       }
     };
-    return autoapply.run(config, { loops: 1 }).then(ctx => ctx.wait());
+    return run(config, { loops: 1 }).then(ctx => ctx.wait());
   });
 
   it("should execute the commands when calling the URL", done => {
@@ -352,7 +292,7 @@ describe("autoapply", () => {
         }
       ]
     };
-    autoapply.run(config).then(ctx => {
+    run(config).then(ctx => {
       chai
         .request("http://localhost:3000")
         .get("/echo")
@@ -375,7 +315,7 @@ describe("autoapply", () => {
         }
       ]
     };
-    autoapply.run(config).then(ctx => {
+    run(config).then(ctx => {
       chai
         .request("http://localhost:3000")
         .get("/header")
@@ -396,7 +336,7 @@ describe("autoapply", () => {
         }
       ]
     };
-    autoapply.run(config).then(ctx => {
+    run(config).then(ctx => {
       chai
         .request("http://localhost:3000")
         .get("/error")
@@ -416,7 +356,7 @@ describe("autoapply", () => {
         }
       ]
     };
-    autoapply.run(config).then(ctx => {
+    run(config).then(ctx => {
       chai
         .request("http://localhost:3000")
         .post("/date")
@@ -437,7 +377,7 @@ describe("autoapply", () => {
         }
       ]
     };
-    autoapply.run(config).then(ctx => {
+    run(config).then(ctx => {
       chai
         .request("http://localhost:3000")
         .get("/echo")
@@ -460,7 +400,7 @@ describe("autoapply", () => {
         }
       ]
     };
-    return autoapply.run(config, { loops: 1 }).then(ctx => ctx.stop());
+    return run(config, { loops: 1 }).then(ctx => ctx.stop());
   });
 
   it("should execute the initializations in the given directory", () => {
@@ -477,8 +417,7 @@ describe("autoapply", () => {
       }
     };
 
-    return autoapply
-      .run(config, { loops: 1 })
+    return run(config, { loops: 1 })
       .then(ctx => ctx.stop())
       .then(() => fsExtra.removeSync(d.name));
   });
@@ -496,8 +435,7 @@ describe("autoapply", () => {
       }
     };
 
-    return autoapply
-      .run(config, { loops: 1 })
+    return run(config, { loops: 1 })
       .then(ctx => ctx.wait())
       .then(() => fsExtra.removeSync(d.name));
   });
@@ -514,7 +452,7 @@ describe("autoapply", () => {
         ]
       }
     };
-    return autoapply.run(config, { loops: 1 }).then(ctx => ctx.wait());
+    return run(config, { loops: 1 }).then(ctx => ctx.wait());
   });
 
   it("should cancel the sleep when being stopped", done => {
@@ -523,7 +461,7 @@ describe("autoapply", () => {
         commands: [["true"]]
       }
     };
-    autoapply.run(config).then(ctx => {
+    run(config).then(ctx => {
       setTimeout(() => ctx.stop().then(() => done()), 50);
     });
   });
@@ -541,7 +479,7 @@ describe("autoapply", () => {
         ]
       }
     };
-    return autoapply.run(config, { loops: 2 }).then(ctx => ctx.wait());
+    return run(config, { loops: 2 }).then(ctx => ctx.wait());
   });
 
   it("should throw an error when the command does not exist", () => {
@@ -556,14 +494,12 @@ describe("autoapply", () => {
         ]
       }
     };
-    return autoapply
-      .run(config, { loops: 1 })
-      .then(ctx =>
-        expect(ctx.loops[0].promise).to.be.rejectedWith(
-          Error,
-          /nonexistingcommand/
-        )
-      );
+    return run(config, { loops: 1 }).then(ctx =>
+      expect(ctx.loops[0].promise).to.be.rejectedWith(
+        Error,
+        /nonexistingcommand/
+      )
+    );
   });
 
   it("should provide a /healthz endpoint", done => {
@@ -577,7 +513,7 @@ describe("autoapply", () => {
       }
     };
 
-    autoapply.run(config, { loops: 1 }).then(ctx => {
+    run(config, { loops: 1 }).then(ctx => {
       chai
         .request("http://localhost:3001")
         .get("/healthz")
@@ -599,7 +535,7 @@ describe("autoapply", () => {
       }
     };
 
-    autoapply.run(config, { loops: 1 }).then(ctx => {
+    run(config, { loops: 1 }).then(ctx => {
       chai
         .request("http://localhost:3000")
         .head("/healthz")
@@ -620,7 +556,7 @@ describe("autoapply", () => {
       }
     };
 
-    autoapply.run(config, { loops: 1 }).then(ctx => {
+    run(config, { loops: 1 }).then(ctx => {
       chai
         .request("http://localhost:3000")
         .get("/123")
@@ -642,7 +578,7 @@ describe("autoapply", () => {
       }
     };
 
-    autoapply.run(config, { loops: 1 }).then(ctx => {
+    run(config, { loops: 1 }).then(ctx => {
       chai
         .request("http://localhost:3000")
         .put("/healthz")

@@ -1,6 +1,6 @@
 {
   "name": "autoapply",
-  "version": "0.8.3",
+  "version": "0.9.0",
   "description": "Automatically apply changes to a Kubernetes cluster",
   "license": "MIT",
   "author": "Pascal",
@@ -10,12 +10,12 @@
     "url": "https://github.com/autoapply/autoapply.git"
   },
   "bin": {
-    "autoapply": "./bin/autoapply.js"
+    "autoapply": "./bin/autoapply-cli.js"
   },
+  "main": "./lib/autoapply.js",
   "dependencies": {
     "argparse": "^1.0.9",
     "child-process-promise": "^2.2.1",
-    "colors": "^1.3.3",
     "fs-extra": "^7.0.1",
     "js-yaml": "^3.12.2",
     "pkginfo": "^0.4.1",
@@ -23,7 +23,7 @@
     "winston": "^3.2.1"
   },
   "scripts": {
-    "prettier": "prettier --check bin/*.js test/*.js",
+    "prettier": "prettier --check bin/*.js lib/*.js test/*.js",
     "lint": "eslint .",
     "test": "yarn prettier && yarn lint && nyc mocha --timeout=8000 --check-leaks",
     "coverage": "nyc report --reporter=text-lcov | coveralls",

@@ -23,8 +23,9 @@
     "winston": "^3.2.1"
   },
   "scripts": {
+    "prettier": "prettier --check bin/*.js test/*.js",
     "lint": "eslint .",
-    "test": "yarn lint && nyc mocha --timeout=8000 --check-leaks",
+    "test": "yarn prettier && yarn lint && nyc mocha --timeout=8000 --check-leaks",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
     "upload": "yarn test && yarn publish"
   },
@@ -36,6 +37,7 @@
     "eslint": "^5.15.0",
     "mocha": "^6.0.2",
     "nyc": "^13.3.0",
+    "prettier": "^1.16.4",
     "should": "^13.2.3"
   }
 }

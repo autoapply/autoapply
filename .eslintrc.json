@@ -15,7 +15,6 @@
     "semi": "error",
     "no-tabs": "error",
     "no-console": "off",
-    "no-constant-condition": "off",
-    "arrow-parens": "error"
+    "no-constant-condition": "off"
   }
 }

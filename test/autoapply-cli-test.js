@@ -67,6 +67,18 @@ describe("autoapply-cli", () => {
     );
   });
 
+  it("should throw an error when no environment variable name is given", () => {
+    return expect(main(["env:"])).to.be.rejectedWith(
+      "empty environment variable name"
+    );
+  });
+
+  it("should throw an error when the environment variable is missing", () => {
+    return expect(main(["env:DOESNTEXIST"])).to.be.rejectedWith(
+      "environment variable does not exist"
+    );
+  });
+
   it("should throw a DebugError when an empty config is given", () => {
     const d = tmp.dirSync();
     const config = {};

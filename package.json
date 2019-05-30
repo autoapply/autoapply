@@ -1,6 +1,6 @@
 {
   "name": "autoapply",
-  "version": "0.9.2",
+  "version": "0.10.0",
   "description": "Automatically apply changes to a Kubernetes cluster",
   "license": "MIT",
   "author": "Pascal",
@@ -13,6 +13,13 @@
     "autoapply": "./bin/autoapply-cli.js"
   },
   "main": "./lib/autoapply.js",
+  "scripts": {
+    "prettier": "prettier --check bin/*.js lib/*.js test/*.js",
+    "lint": "eslint .",
+    "test": "yarn prettier && yarn lint && nyc mocha --timeout=8000 --check-leaks",
+    "coverage": "nyc report --reporter=text-lcov | coveralls",
+    "upload": "yarn test && yarn publish"
+  },
   "dependencies": {
     "argparse": "^1.0.9",
     "child-process-promise": "^2.2.1",
@@ -21,13 +28,6 @@
     "pkginfo": "^0.4.1",
     "tmp-promise": "^2.0.1",
     "winston": "^3.2.1"
-  },
-  "scripts": {
-    "prettier": "prettier --check bin/*.js lib/*.js test/*.js",
-    "lint": "eslint .",
-    "test": "yarn prettier && yarn lint && nyc mocha --timeout=8000 --check-leaks",
-    "coverage": "nyc report --reporter=text-lcov | coveralls",
-    "upload": "yarn test && yarn publish"
   },
   "devDependencies": {
     "chai": "^4.1.2",

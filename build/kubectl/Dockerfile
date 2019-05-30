@@ -11,7 +11,7 @@ RUN apk add --no-cache curl git openssh-client tar openssl tini \
 
 COPY --from=golang /go/bin/dockerize /usr/local/bin/
 
-ENV KUBECTL_URL "https://storage.googleapis.com/kubernetes-release/release/v1.13.0/bin/linux/amd64/kubectl"
+ENV KUBECTL_URL "https://storage.googleapis.com/kubernetes-release/release/v1.14.0/bin/linux/amd64/kubectl"
 RUN curl --fail "${KUBECTL_URL}" > /usr/local/bin/kubectl \
     && chmod +x /usr/local/bin/kubectl
 

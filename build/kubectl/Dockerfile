@@ -15,7 +15,7 @@ ENV KUBECTL_URL "https://storage.googleapis.com/kubernetes-release/release/v1.13
 RUN curl --fail "${KUBECTL_URL}" > /usr/local/bin/kubectl \
     && chmod +x /usr/local/bin/kubectl
 
-ENV SOPS_URL "https://github.com/mozilla/sops/releases/download/3.2.0/sops-3.2.0.linux"
+ENV SOPS_URL "https://github.com/mozilla/sops/releases/download/3.3.0/sops-3.3.0.linux"
 RUN curl --fail -L "${SOPS_URL}" > /usr/local/bin/sops \
     && chmod +x /usr/local/bin/sops
 

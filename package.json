@@ -1,6 +1,6 @@
 {
   "name": "autoapply",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "Automatically apply changes to a Kubernetes cluster",
   "license": "MIT",
   "author": "Pascal",
@@ -33,11 +33,11 @@
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
     "chai-http": "^4.3.0",
-    "coveralls": "^3.0.3",
+    "coveralls": "^3.0.4",
     "eslint": "^5.16.0",
     "mocha": "^6.1.4",
     "nyc": "^14.1.1",
-    "prettier": "^1.17.1",
+    "prettier": "^1.18.2",
     "should": "^13.2.3"
   }
 }

@@ -1,4 +1,3 @@
-# See https://github.com/autoapply/autoapply/blob/master/docs/hello-world.md
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -12,14 +11,15 @@ spec:
       containers:
         - name: autoapply
           image: autoapply/autoapply:kubectl
-          args: ['env:AUTOAPPLY_CONFIG']
+          args: ["env:AUTOAPPLY_CONFIG"]
           env:
             - name: AUTOAPPLY_CONFIG
               value: |
                 loop:
+                  sleep: 60
                   commands:
-                    - git clone --depth 1 https://github.com/autoapply/hello-world workspace/
-                    - kubectl apply -f workspace/
+                    - git clone --depth 1 https://github.com/autoapply/template-kubectl workspace/
+                    - kubectl apply -f workspace/dev/
                 server:
                   enabled: true
           ports:

@@ -21,25 +21,7 @@ Automatically apply changes to a Kubernetes cluster.
 
 ## Usage
 
-First create an empty, publicly accessible repository.
-For private repositories, you can use [deploy keys](docs/deploy-keys.md).
-Add the desired Kubernetes resource files to the repository, for example [nginx.yaml](docs/examples/nginx.yaml),
-and make sure all files have been pushed.
-
-Now download [kubernetes-simple.yaml](docs/examples/kubernetes-simple.yaml) and change
-`https://github.com/autoapply/hello-world` to the URL of the repository you just created.
-Then create the autoapply deployment in your cluster:
-
-```
-$ kubectl apply -f kubernetes-simple.yaml
-```
-
-Now, autoapply will download the resource files from your repository and apply them to the cluster.
-When you update the repository, autoapply will fetch the new files and update the cluster accordingly.
-
-To automatically setup autoapply in a cluster, see the related [autosetup](https://github.com/autoapply/autosetup) project.
-
-For more detailed instructions, see [Hello, World!](docs/hello-world.md)
+To quickly setup autoapply in a Kubernetes cluster, see the [autosetup](https://github.com/autoapply/autosetup) project.
 
 ## Configuration
 
@@ -48,11 +30,14 @@ A basic configuration file looks like this:
 ```yaml
 loop:
   commands:
-  - git clone --depth 1 https://github.com/autoapply/hello-world workspace/
-  - kubectl apply -f workspace/
+    - git clone --depth 1 https://github.com/autoapply/template-kubectl .
+    - kubectl apply -f common/
+    - kubectl apply -f dev/
 ```
 
-For more information, see the [documentation](docs/configuration.md).
+For more configuration files, see the [examples](https://github.com/autoapply/autoapply/tree/master/docs/examples) folder.
+
+For a full description of the configuration format, see the [documentation](docs/configuration.md).
 
 ## Docker tags
 
@@ -80,4 +65,4 @@ For more information, see the [documentation](docs/configuration.md).
 
 ## License
 
-Autoapply is licensed under the [MIT License](LICENSE)
+[MIT](LICENSE)

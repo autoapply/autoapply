@@ -1,8 +1,11 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: gatsby
 spec:
+  selector:
+    matchLabels:
+      app: gatsby
   template:
     metadata:
       labels:
@@ -10,7 +13,7 @@ spec:
     spec:
       containers:
         - name: gatsby
-          image: autoapply/autoapply:latest
+          image: autoapply/autoapply:kubectl
           args: ["env:AUTOAPPLY_CONFIG"]
           env:
             - name: AUTOAPPLY_CONFIG

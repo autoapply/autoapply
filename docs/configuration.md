@@ -6,24 +6,24 @@ The autoapply configuration is specified in [YAML](http://yaml.org/) and has the
 <a href="#init">init</a>:
   <a href="#cwd">cwd</a>: ...
   <a href="#commands">commands</a>:
-  - ...
+    - ...
 <a href="#loop">loop</a>:
   <a href="#sleep">sleep</a>: 60
   <a href="#onerror">onerror</a>: continue
   <a href="#cwd-1">cwd</a>: ...
   <a href="#commands-1">commands</a>:
-  - ...
+    - ...
 <a href="#server">server</a>:
   <a href="#enabled">enabled</a>: false
   <a href="#port">port</a>: 3000
 <a href="#call">call</a>:
   <a href="#path">path</a>: /path
   <a href="#headers">headers</a>:
-  - ...
+    - ...
   <a href="#stream">stream</a>: false
   <a href="#cwd-2">cwd</a>: ...
   <a href="#commands-2">commands</a>:
-  - ...
+    - ...
 </pre>
 
 All sections are optional, but you have to configure at least one [`loop`](#loop) or [`call`](#call).
@@ -52,19 +52,19 @@ Define the loop commands. If you only need one loop, you can just specify an obj
 loop:
   cwd: /tmp
   commands:
-  - ls
+    - ls
 ```
 
 If you want to run multiple loops in parallel, you can specify an array:
 
 ```yaml
 loop:
-- cwd: .
-  commands:
-  - echo "This is loop 1"
-- sleep: 120
-  commands:
-  - echo "This is loop 2"
+  - cwd: .
+    commands:
+      - echo "This is loop 1"
+  - sleep: 120
+    commands:
+      - echo "This is loop 2"
 ```
 
 ### `cwd`
@@ -91,9 +91,9 @@ Example:
 loop:
   onerror: ignore
   commands:
-  - git pull
-  - make &> .build
-  - slackcli -h '#build' -m "Build status $(cat .build)"
+    - git pull
+    - make &> .build
+    - slackcli -h '#build' -m "Build status $(cat .build)"
 ```
 
 ### `commands`
@@ -127,17 +127,17 @@ If you only need one call, you can just specify an object:
 ```yaml
 call:
   path: /echo
-  commands: [ 'echo hello' ]
+  commands: ["echo hello"]
 ```
 
 If you want to provide multiple calls, you can specify an array:
 
 ```yaml
 call:
-- path: /echo1
-  commands: [ 'echo hello' ]
-- path: /echo2
-  commands: [ 'echo world' ]
+  - path: /echo1
+    commands: ["echo hello"]
+  - path: /echo2
+    commands: ["echo world"]
 ```
 
 The following environment variables will be set for each call:
@@ -158,9 +158,9 @@ The path to bind this call to:
 
 ```yaml
 call:
-- path: /date
-  commands:
-  - date
+  - path: /date
+    commands:
+      - date
 ```
 
 ### `headers`
@@ -169,19 +169,19 @@ HTTP headers to send for each request
 
 ```yaml
 call:
-- path: /index.html
-  headers:
-  - name: Content-Type
-    value: text/plain; charset=utf-8
-  commands:
-  - echo '<html><body>Hello!</body></html>'
+  - path: /index.html
+    headers:
+      - name: Content-Type
+        value: text/plain; charset=utf-8
+    commands:
+      - echo '<html><body>Hello!</body></html>'
 ```
 
 You could also pass the headers as an object:
 
 ```yaml
-  headers:
-    Content-Type: text/plain; charset=utf-8
+headers:
+  Content-Type: text/plain; charset=utf-8
 ```
 
 ### `methods`
@@ -194,20 +194,20 @@ To support `GET` and `POST`:
 
 ```yaml
 call:
-- path: /clear
-  methods: ['GET', 'POST']
-  commands:
-  - rm -rf /tmp/*
+  - path: /clear
+    methods: ["GET", "POST"]
+    commands:
+      - rm -rf /tmp/*
 ```
 
 If you want to support all methods:
 
 ```yaml
 call:
-- path: /check
-  methods: ['*']
-  commands:
-  - echo $REQUEST_METHOD
+  - path: /check
+    methods: ["*"]
+    commands:
+      - echo $REQUEST_METHOD
 ```
 
 ### `stream`
@@ -217,14 +217,14 @@ Default is `false`.
 
 ```yaml
 call:
-- path: /access.log
-  stream: true
-  headers:
-  # See https://stackoverflow.com/a/35848615
-  - name: X-Content-Type-Options
-    value: nosniff
-  commands:
-  - tail -f /var/log/access.log
+  - path: /access.log
+    stream: true
+    headers:
+      # See https://stackoverflow.com/a/35848615
+      - name: X-Content-Type-Options
+        value: nosniff
+    commands:
+      - tail -f /var/log/access.log
 ```
 
 ### `cwd`
@@ -247,24 +247,24 @@ The simple string form will use the shell, so environment variables etc. can be 
 
 ```yaml
 commands:
-- ls ${HOME}
-- "echo $(pwd)"
+  - ls ${HOME}
+  - "echo $(pwd)"
 ```
 
 The array form will not use the shell. In this case, `ls` will try to list the contents of a directory with the literal name `${HOME}`. This will likely fail with "No such file or directory":
 
 ```yaml
 commands:
-- ['ls', '${HOME}']
+  - ["ls", "${HOME}"]
 ```
 
 It is also possible to specify full scripts to be executed:
 
 ```yaml
 commands:
-- script: |
-    #!/usr/bin/env node
-    console.log('Hello, world!');
+  - script: |
+      #!/usr/bin/env node
+      console.log('Hello, world!');
 ```
 
 #### `stdout`
@@ -279,8 +279,8 @@ Example:
 
 ```yaml
 commands:
-- command: ls "${HOME}/.ssh/id_rsa"
-  stdout: ignore
+  - command: ls "${HOME}/.ssh/id_rsa"
+    stdout: ignore
 ```
 
 #### `stderr`
@@ -289,7 +289,7 @@ The same option as [stdout](#stdout), but for the error output of the command:
 
 ```yaml
 commands:
-- command: curl "$URL"
-  stdout: ignore
-  stderr: ignore
+  - command: curl "$URL"
+    stdout: ignore
+    stderr: ignore
 ```

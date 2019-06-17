@@ -35,7 +35,7 @@ loop:
     - kubectl apply -f dev/
 ```
 
-For more configuration files, see the [examples](https://github.com/autoapply/autoapply/tree/master/docs/examples) folder.
+For example repositories, see [template-kubectl](https://github.com/autoapply/template-kubectl) and [template-kustomize](https://github.com/autoapply/template-kustomize). For more configuration files, see [examples](https://github.com/autoapply/autoapply/tree/master/docs/examples).
 
 For a full description of the configuration format, see the [documentation](docs/configuration.md).
 

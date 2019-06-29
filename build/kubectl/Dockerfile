@@ -1,17 +1,10 @@
-FROM golang:alpine AS golang
-
-RUN apk add --no-cache git \
-    && go get github.com/jwilder/dockerize
-
 FROM node:alpine
 
-RUN apk add --no-cache curl git openssh-client tar openssl tini \
+RUN apk add --no-cache curl git openssh-client tar openssl tini gnupg \
     && yarn global add yaml-crypt \
     && adduser -D -g autoapply autoapply
 
-COPY --from=golang /go/bin/dockerize /usr/local/bin/
-
-ENV KUBECTL_URL "https://storage.googleapis.com/kubernetes-release/release/v1.14.3/bin/linux/amd64/kubectl"
+ENV KUBECTL_URL "https://storage.googleapis.com/kubernetes-release/release/v1.15.0/bin/linux/amd64/kubectl"
 RUN curl --fail "${KUBECTL_URL}" > /usr/local/bin/kubectl \
     && chmod +x /usr/local/bin/kubectl
 

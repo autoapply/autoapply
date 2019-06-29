@@ -56,7 +56,7 @@ async function main(argv = null) {
       if (!envvar) {
         throw new Error("empty environment variable name!");
       }
-      if (!process.env.hasOwnProperty(envvar)) {
+      if (!Object.prototype.hasOwnProperty.call(process.env, envvar)) {
         throw new Error(`environment variable does not exist: ${envvar}`);
       }
       config = yaml.safeLoad(process.env[envvar]);

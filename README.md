@@ -48,7 +48,9 @@ For a full description of the configuration format, see the [documentation](docs
 
 ## Related projects
 
-- [kube-applier](https://github.com/box/kube-applier) is very similar, but less flexible.
+- [Argo CD](https://github.com/argoproj/argo-cd) is very similar, but has a more complex architecture.
+  It doesn't support yaml-crypt or sops out of the box, but it also supports custom workflows.
+- [kube-applier](https://github.com/box/kube-applier) is also very similar, but less flexible.
   It doesn't support Helm or custom workflows like using sops.
 - [Keel](https://github.com/keel-hq/keel) provides fully automated updates, but only changes
   the container image version, nothing else.

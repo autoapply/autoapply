@@ -6,10 +6,11 @@ const argparse = require("argparse");
 const fsExtra = require("fs-extra");
 const yaml = require("js-yaml");
 const winston = require("winston");
-require("pkginfo")(module);
 
 const { logger } = require("../lib/common");
 const { run } = require("../lib/autoapply");
+
+const pkg = require("../package.json");
 
 /**
  * @param {string[]|*} argv the program arguments
@@ -30,10 +31,10 @@ async function main(argv = null) {
   });
 
   const parser = new argparse.ArgumentParser({
-    prog: module.exports.name,
-    version: module.exports.version,
+    prog: pkg.name,
+    version: pkg.version,
     addHelp: true,
-    description: module.exports.description
+    description: pkg.description
   });
   parser.addArgument(["-d", "--debug"], {
     action: "storeTrue",
@@ -78,46 +79,10 @@ async function main(argv = null) {
     }
   }
 
-  return run(config, args).then(ctx => {
-    setupSignalHandler(ctx);
-    catchLoops(ctx);
-    return ctx;
-  });
+  return run(config, args);
 }
 
 class DebugError extends Error {}
-
-function setupSignalHandler(ctx) {
-  const track = { time: 0 };
-  process.on("SIGINT", () => {
-    const now = new Date().getTime();
-    if (now - track.time > 5000) {
-      logger.info("Signal SIGINT received, shutting down...");
-      ctx.stop().catch(err => {
-        logger.error(
-          "Failed to shut down: %s",
-          err.message || "unknown error!"
-        );
-      });
-    } else {
-      logger.warn("Terminated.");
-      process.exit();
-    }
-    track.time = now;
-  });
-}
-
-function catchLoops(ctx) {
-  ctx.loops.forEach(
-    loop =>
-      (loop.promise = loop.promise.catch(err => {
-        logger.warn(
-          "Error while running loop: %s",
-          err.message || "unknown error!"
-        );
-      }))
-  );
-}
 
 if (require.main === module) {
   main().catch(err => {

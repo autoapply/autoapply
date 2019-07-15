@@ -18,14 +18,12 @@
     "lint": "eslint .",
     "test": "yarn prettier && yarn lint && nyc mocha --timeout=8000 --check-leaks",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
-    "upload": "yarn test && yarn publish"
+    "prepublish": "yarn test"
   },
   "dependencies": {
     "argparse": "^1.0.9",
-    "child-process-promise": "^2.2.1",
     "fs-extra": "^8.1.0",
     "js-yaml": "^3.13.1",
-    "pkginfo": "^0.4.1",
     "tmp-promise": "^2.0.1",
     "winston": "^3.2.1"
   },

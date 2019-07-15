@@ -497,7 +497,7 @@ describe("autoapply", () => {
     return run(config, { loops: 1 }).then(ctx =>
       expect(ctx.loops[0].promise).to.be.rejectedWith(
         Error,
-        /nonexistingcommand/
+        /failed with code 127/
       )
     );
   });

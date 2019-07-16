@@ -575,6 +575,7 @@ describe("autoapply", () => {
         .head("/healthz")
         .end((err, res) => {
           expect(res).to.have.status(200);
+          expect(res.text).to.equal("");
           ctx.stop().then(() => done());
         });
     });

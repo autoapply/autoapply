@@ -1,6 +1,6 @@
 # Configuration format
 
-The autoapply configuration is specified in [YAML](http://yaml.org/) and has the following structure:
+The autoapply configuration is specified in [YAML](https://yaml.org/) and has the following structure:
 
 <pre>
 <a href="#init">init</a>:
@@ -21,6 +21,7 @@ The autoapply configuration is specified in [YAML](http://yaml.org/) and has the
   <a href="#headers">headers</a>:
     - ...
   <a href="#stream">stream</a>: false
+  <a href="#onerror-1">onerror</a>: fail
   <a href="#cwd-2">cwd</a>: ...
   <a href="#commands-2">commands</a>:
     - ...
@@ -215,6 +216,9 @@ call:
 Start to send available data to the client before all commands have finished?
 Default is `false`.
 
+Data is sent before the commands have finished, so when using `stream`,
+the HTTP status will always be 200 (OK), regardless of any errors.
+
 ```yaml
 call:
   - path: /access.log
@@ -231,6 +235,26 @@ call:
 
 Directory in which to execute the commands (working directory).
 If unset, a new temporary directory will be created for each call.
+
+### `onerror`
+
+What should happen when a command fails? Possible values:
+
+- `ignore` - ignore the error and continue with the next command
+- `continue` don't execute any remaining commands and return HTTP status 200 (OK)
+- `fail` - (default) - stop the call and return HTTP status 500 (error)
+
+Example:
+
+```yaml
+call:
+  - path: /check
+    onerror: ignore
+    commands:
+      - curl https://example.com/test1
+      - curl https://example.com/test2
+      - curl https://example.com/test3
+```
 
 ### `commands`
 
@@ -273,7 +297,7 @@ How to treat the standard output of the command?
 Possible values:
 
 - `pipe` (default) - print the output as the standard output of the autoapply process
-- `ignore` - discard any output (like redirecting to /dev/null)
+- `ignore` - discard any output (like redirecting to `/dev/null`)
 
 Example:
 

@@ -249,7 +249,7 @@ describe("autoapply", () => {
   it("should execute the given commands", () => {
     const config = {
       loop: {
-        onerror: "fail",
+        onerror: "ignore",
         sleep: 0,
         commands: [
           {
@@ -259,11 +259,14 @@ describe("autoapply", () => {
           {
             command: ["date"],
             stdout: "ignore"
+          },
+          {
+            command: ["/dev/null"]
           }
         ]
       }
     };
-    return run(config, { loops: 1 }).then(ctx => ctx.wait());
+    return run(config, { loops: 2 }).then(ctx => ctx.wait());
   });
 
   it("should execute the given script", () => {
@@ -287,6 +290,7 @@ describe("autoapply", () => {
         {
           path: "/echo",
           methods: [],
+          stream: "false",
           headers: { "Content-Type": "text/plain" },
           commands: ["echo hello", "echo world >&2"]
         }
@@ -494,7 +498,7 @@ describe("autoapply", () => {
         ]
       }
     };
-    return run(config, { loops: 1 }).then(ctx =>
+    return run(config, { loops: 1, reject: true }).then(ctx =>
       expect(ctx.loops[0].promise).to.be.rejectedWith(
         Error,
         /failed with code 127/
@@ -520,6 +524,36 @@ describe("autoapply", () => {
         .end((err, res) => {
           expect(res).to.have.status(200);
           expect(res.text).to.equal("OK");
+          ctx.stop().then(() => done());
+        });
+    });
+  });
+
+  it("should correctly handle headers", done => {
+    const config = {
+      server: {
+        enabled: true
+      },
+      call: {
+        path: "/test",
+        headers: [
+          { name: "Header1", value: "Value1" },
+          { name: "Header2", value: "Value2" }
+        ],
+        commands: ["echo ${HTTP_X_TEST}"]
+      }
+    };
+
+    run(config, { loops: 1 }).then(ctx => {
+      chai
+        .request("http://localhost:3000")
+        .get("/test")
+        .set("X-Test", "test123")
+        .end((err, res) => {
+          expect(res).to.have.status(200);
+          expect(res).to.have.header("Header1", "Value1");
+          expect(res).to.have.header("Header2", "Value2");
+          expect(res.text).to.equal("test123\n");
           ctx.stop().then(() => done());
         });
     });
@@ -585,6 +619,31 @@ describe("autoapply", () => {
         .end((err, res) => {
           expect(res).to.have.status(405);
           expect(res.text).to.equal("Only GET or HEAD supported!");
+          ctx.stop().then(() => done());
+        });
+    });
+  });
+
+  it("should return 500 when there is an error", done => {
+    const config = {
+      server: {
+        enabled: true
+      },
+      call: {
+        path: "/test",
+        commands: ["nonexistent"]
+      }
+    };
+
+    run(config).then(ctx => {
+      chai
+        .request("http://localhost:3000")
+        .get("/test")
+        .end((err, res) => {
+          expect(res).to.have.status(500);
+          expect(res.text).to.equal(
+            "/bin/sh: nonexistent: command not found\n"
+          );
           ctx.stop().then(() => done());
         });
     });

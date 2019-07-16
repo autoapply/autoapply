@@ -16,7 +16,34 @@ const pkg = require("../package.json");
  * @param {string[]|*} argv the program arguments
  * @returns {Promise<Context>} the context
  */
-async function main(argv = null) {
+async function main(argv = null, catchErrors = true) {
+  let debug = false;
+  try {
+    configureLogger();
+
+    const args = parseArguments(argv);
+    debug = args.debug;
+
+    if (debug && logger.level === "info") {
+      logger.level = "debug";
+    }
+
+    return await start(args);
+  } catch (e) {
+    if (catchErrors) {
+      process.exitCode = 1;
+      if (debug) {
+        logger.error(e.stack);
+      } else {
+        logger.error(e.message || "unknown error!");
+      }
+    } else {
+      throw e;
+    }
+  }
+}
+
+function configureLogger() {
   logger.configure({
     level: process.env.LOG_LEVEL || "info",
     format: winston.format.combine(
@@ -29,7 +56,9 @@ async function main(argv = null) {
     ),
     transports: [new winston.transports.Console()]
   });
+}
 
+function parseArguments(argv) {
   const parser = new argparse.ArgumentParser({
     prog: pkg.name,
     version: pkg.version,
@@ -44,55 +73,38 @@ async function main(argv = null) {
     metavar: "<configuration>",
     help: "Configuration file to use"
   });
-
-  const args = parser.parseArgs(argv);
-  if (args.debug && logger.level === "info") {
-    logger.level = "debug";
-  }
-
-  let config;
-  try {
-    if (args.config.startsWith("env:")) {
-      const envvar = args.config.substr("env:".length);
-      if (!envvar) {
-        throw new Error("empty environment variable name!");
-      }
-      if (!Object.prototype.hasOwnProperty.call(process.env, envvar)) {
-        throw new Error(`environment variable does not exist: ${envvar}`);
-      }
-      config = yaml.safeLoad(process.env[envvar]);
-    } else {
-      const content = await fsExtra.readFile(args.config);
-      config = yaml.safeLoad(content);
-    }
-    if (!config) {
-      throw new Error("configuration is empty!");
-    }
-    if (args.debug) {
-      logger.debug("Loaded configuration: %s", JSON.stringify(config, null, 2));
-    }
-  } catch (e) {
-    if (args.debug) {
-      throw new DebugError(e);
-    } else {
-      throw e;
-    }
-  }
-
-  return run(config, args);
+  return parser.parseArgs(argv);
 }
 
-class DebugError extends Error {}
+async function start(args) {
+  let config;
+  if (args.config.startsWith("env:")) {
+    const envvar = args.config.substr("env:".length);
+    if (!envvar) {
+      throw new Error("empty environment variable name!");
+    }
+    if (!Object.prototype.hasOwnProperty.call(process.env, envvar)) {
+      throw new Error(`environment variable does not exist: ${envvar}`);
+    }
+    config = yaml.safeLoad(process.env[envvar]);
+  } else {
+    const content = await fsExtra.readFile(args.config);
+    config = yaml.safeLoad(content);
+  }
+
+  if (!config) {
+    throw new Error("configuration is empty!");
+  }
+
+  if (args.debug) {
+    logger.debug("Loaded configuration: %s", JSON.stringify(config, null, 2));
+  }
+
+  return run(config, { catchErrors: true });
+}
 
 if (require.main === module) {
-  main().catch(err => {
-    process.exitCode = 1;
-    if (err instanceof DebugError) {
-      logger.error(err.stack);
-    } else {
-      logger.error(err.message || "unknown error!");
-    }
-  });
+  main();
 }
 
-module.exports.main = main;
+module.exports = { main };

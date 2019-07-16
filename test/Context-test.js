@@ -6,6 +6,7 @@ const it = mocha.it;
 
 const { logger } = require("../lib/common");
 const { Context } = require("../lib/Context");
+const { Server } = require("../lib/Server");
 
 logger.configure({
   level: "off",
@@ -15,9 +16,10 @@ logger.configure({
 describe("Context", () => {
   it("should log a warning when the server cannot be stopped", () => {
     const ctx = new Context();
-    ctx.server = {
+    ctx.server = new Server(8080, ctx);
+    ctx.server.server = {
       close: callback => callback(new Error("Failed!"))
     };
-    ctx.stop();
+    return ctx.stop();
   });
 });

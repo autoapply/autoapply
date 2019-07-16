@@ -641,9 +641,7 @@ describe("autoapply", () => {
         .get("/test")
         .end((err, res) => {
           expect(res).to.have.status(500);
-          expect(res.text).to.equal(
-            "/bin/sh: nonexistent: command not found\n"
-          );
+          expect(res.text).to.contain("not found");
           ctx.stop().then(() => done());
         });
     });

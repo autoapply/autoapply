@@ -4,12 +4,14 @@ RUN apk add --no-cache curl git openssh-client tar openssl tini gnupg \
     && yarn global add yaml-crypt \
     && adduser -D -g autoapply autoapply
 
-ENV KUBECTL_URL "https://storage.googleapis.com/kubernetes-release/release/v1.15.1/bin/linux/amd64/kubectl"
-RUN curl --fail "${KUBECTL_URL}" > /usr/local/bin/kubectl \
+RUN curl --fail -L \
+    "https://storage.googleapis.com/kubernetes-release/release/v1.16.0/bin/linux/amd64/kubectl" \
+    > /usr/local/bin/kubectl \
     && chmod +x /usr/local/bin/kubectl
 
-ENV SOPS_URL "https://github.com/mozilla/sops/releases/download/3.3.1/sops-3.3.1.linux"
-RUN curl --fail -L "${SOPS_URL}" > /usr/local/bin/sops \
+RUN curl --fail -L \
+    "https://github.com/mozilla/sops/releases/download/3.4.0/sops-3.4.0.linux" \
+    > /usr/local/bin/sops \
     && chmod +x /usr/local/bin/sops
 
 COPY . /tmp/src/

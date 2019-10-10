@@ -57,7 +57,7 @@ For a full description of the configuration format, see the [documentation](docs
 - [Helm](https://github.com/kubernetes/helm) does not provide automated updates, but still offers
   a consistent way to release new versions. However, you will still need a way to manage the values
   that will be used to create releases from charts.
-- [Flux](https://github.com/weaveworks/flux) is also very similar, but goes a step further and
+- [Flux](https://github.com/fluxcd/flux) is also very similar, but goes a step further and
   uses an abstraction on top of the existing Kubernetes model.
   There is also a blog post by Weaveworks about
   [GitOps and Kubernetes](https://www.weave.works/blog/gitops-high-velocity-cicd-for-kubernetes),

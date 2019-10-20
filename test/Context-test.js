@@ -16,7 +16,7 @@ logger.configure({
 describe("Context", () => {
   it("should log a warning when the server cannot be stopped", () => {
     const ctx = new Context();
-    ctx.server = new Server(8080, ctx);
+    ctx.server = new Server({ port: 8080 }, []);
     ctx.server.server = {
       close: callback => callback(new Error("Failed!"))
     };

@@ -300,12 +300,13 @@ describe("autoapply", () => {
       chai
         .request("http://localhost:3000")
         .get("/echo")
-        .end((err, res) => {
-          expect(res).to.have.status(200);
-          expect(res).to.have.header("Content-Type", "text/plain");
-          expect(res.text).to.equal("hello\nworld\n");
-          ctx.stop().then(() => done());
-        });
+        .end((err, res) =>
+          cleanup(done, ctx, () => {
+            expect(res).to.have.status(200);
+            expect(res).to.have.header("Content-Type", "text/plain");
+            expect(res.text).to.equal("hello\nworld\n");
+          })
+        );
     });
   });
 
@@ -323,11 +324,12 @@ describe("autoapply", () => {
       chai
         .request("http://localhost:3000")
         .get("/header")
-        .end((err, res) => {
-          expect(res).to.have.status(200);
-          expect(res.text).to.equal("hello from localhost:3000\n");
-          ctx.stop().then(() => done());
-        });
+        .end((err, res) =>
+          cleanup(done, ctx, () => {
+            expect(res).to.have.status(200);
+            expect(res.text).to.equal("hello from localhost:3000\n");
+          })
+        );
     });
   });
 
@@ -344,10 +346,11 @@ describe("autoapply", () => {
       chai
         .request("http://localhost:3000")
         .get("/error")
-        .end((err, res) => {
-          expect(res).to.have.status(500);
-          ctx.stop().then(() => done());
-        });
+        .end((err, res) =>
+          cleanup(done, ctx, () => {
+            expect(res).to.have.status(500);
+          })
+        );
     });
   });
 
@@ -364,10 +367,11 @@ describe("autoapply", () => {
       chai
         .request("http://localhost:3000")
         .post("/date")
-        .end((err, res) => {
-          expect(res).to.have.status(405);
-          ctx.stop().then(() => done());
-        });
+        .end((err, res) =>
+          cleanup(done, ctx, () => {
+            expect(res).to.have.status(405);
+          })
+        );
     });
   });
 
@@ -385,11 +389,12 @@ describe("autoapply", () => {
       chai
         .request("http://localhost:3000")
         .get("/echo")
-        .end((err, res) => {
-          expect(res).to.have.status(200);
-          expect(res.text).to.equal("hello\nworld\n");
-          ctx.stop().then(() => done());
-        });
+        .end((err, res) =>
+          cleanup(done, ctx, () => {
+            expect(res).to.have.status(200);
+            expect(res.text).to.equal("hello\nworld\n");
+          })
+        );
     });
   });
 
@@ -521,11 +526,12 @@ describe("autoapply", () => {
       chai
         .request("http://localhost:3001")
         .get("/healthz")
-        .end((err, res) => {
-          expect(res).to.have.status(200);
-          expect(res.text).to.equal("OK");
-          ctx.stop().then(() => done());
-        });
+        .end((err, res) =>
+          cleanup(done, ctx, () => {
+            expect(res).to.have.status(200);
+            expect(res.text).to.equal("OK");
+          })
+        );
     });
   });
 
@@ -549,13 +555,14 @@ describe("autoapply", () => {
         .request("http://localhost:3000")
         .get("/test")
         .set("X-Test", "test123")
-        .end((err, res) => {
-          expect(res).to.have.status(200);
-          expect(res).to.have.header("Header1", "Value1");
-          expect(res).to.have.header("Header2", "Value2");
-          expect(res.text).to.equal("test123\n");
-          ctx.stop().then(() => done());
-        });
+        .end((err, res) =>
+          cleanup(done, ctx, () => {
+            expect(res).to.have.status(200);
+            expect(res).to.have.header("Header1", "Value1");
+            expect(res).to.have.header("Header2", "Value2");
+            expect(res.text).to.equal("test123\n");
+          })
+        );
     });
   });
 
@@ -573,11 +580,12 @@ describe("autoapply", () => {
       chai
         .request("http://localhost:3000")
         .head("/healthz")
-        .end((err, res) => {
-          expect(res).to.have.status(200);
-          expect(res.text).to.equal("");
-          ctx.stop().then(() => done());
-        });
+        .end((err, res) =>
+          cleanup(done, ctx, () => {
+            expect(res).to.have.status(200);
+            expect(res.text).to.equal("");
+          })
+        );
     });
   });
 
@@ -595,11 +603,12 @@ describe("autoapply", () => {
       chai
         .request("http://localhost:3000")
         .get("/123")
-        .end((err, res) => {
-          expect(res).to.have.status(404);
-          expect(res.text).to.equal("Not found!");
-          ctx.stop().then(() => done());
-        });
+        .end((err, res) =>
+          cleanup(done, ctx, () => {
+            expect(res).to.have.status(404);
+            expect(res.text).to.equal("Not found!");
+          })
+        );
     });
   });
 
@@ -617,11 +626,12 @@ describe("autoapply", () => {
       chai
         .request("http://localhost:3000")
         .put("/healthz")
-        .end((err, res) => {
-          expect(res).to.have.status(405);
-          expect(res.text).to.equal("Only GET or HEAD supported!");
-          ctx.stop().then(() => done());
-        });
+        .end((err, res) =>
+          cleanup(done, ctx, () => {
+            expect(res).to.have.status(405);
+            expect(res.text).to.equal("Only GET or HEAD supported!");
+          })
+        );
     });
   });
 
@@ -640,11 +650,22 @@ describe("autoapply", () => {
       chai
         .request("http://localhost:3000")
         .get("/test")
-        .end((err, res) => {
-          expect(res).to.have.status(500);
-          expect(res.text).to.contain("not found");
-          ctx.stop().then(() => done());
-        });
+        .end((err, res) =>
+          cleanup(done, ctx, () => {
+            expect(res).to.have.status(500);
+            expect(res.text).to.contain("not found");
+          })
+        );
     });
   });
 });
+
+function cleanup(done, ctx, f) {
+  let err = null;
+  try {
+    f();
+  } catch (e) {
+    err = e;
+  }
+  ctx.stop().then(() => done(err), e => done(e));
+}

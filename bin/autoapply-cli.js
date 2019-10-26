@@ -3,7 +3,7 @@
 const process = require("process");
 
 const argparse = require("argparse");
-const fsExtra = require("fs-extra");
+const { readFile } = require("fs-extra");
 const yaml = require("js-yaml");
 const winston = require("winston");
 
@@ -88,7 +88,7 @@ async function start(args) {
     }
     config = yaml.safeLoad(process.env[envvar]);
   } else {
-    const content = await fsExtra.readFile(args.config);
+    const content = await readFile(args.config);
     config = yaml.safeLoad(content);
   }
 

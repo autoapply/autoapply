@@ -20,6 +20,8 @@ The autoapply configuration is specified in [YAML](https://yaml.org/) and has th
   <a href="#path">path</a>: /path
   <a href="#headers">headers</a>:
     - ...
+  <a href="#authentication">authentication</a>:
+    - ...
   <a href="#stream">stream</a>: false
   <a href="#onerror-1">onerror</a>: fail
   <a href="#cwd-2">cwd</a>: ...
@@ -112,7 +114,7 @@ responds with `OK` and can be used as a [liveness probe](https://kubernetes.io/d
 
 ### `enabled`
 
-Set this to `true` if you want to have the HTTP server running (default is `false`).
+Set this to `true` if you want to enable the HTTP server (default is `false`).
 
 The server will be enabled automatically when you specify [calls](#call).
 
@@ -147,11 +149,17 @@ The following environment variables will be set for each call:
 - `REQUEST_URI` - the requested URI, for example `/echo1`
 - `REMOTE_ADDR` - the IP address of the requesting client
 
-Additionally, all request HTTP headers will be available as environment
-variables. To improve compatibility with existing shells, the header names
-will be prefixed with `HTTP_`, translated to uppercase and all special
-characters will be replaced with `_`.
-For example, the HTTP header `User-Agent` will be available as `HTTP_USER_AGENT`.
+Additionally, all request HTTP headers and query parameters will be
+available as environment variables.
+
+Header name environment variables will be prefixed with `HTTP_` and
+query parameters will be prefixed with `QUERY_`. Both header names
+and query parameters will be converted to uppercase and all characters
+other than letters or numbers will be replaced with `_`.
+
+For example, the HTTP header `User-Agent` will be available
+as `HTTP_USER_AGENT`, the query parameter from the URL `/test?param.1=x`
+will be available as `QUERY_PARAM_1`.
 
 ### `path`
 
@@ -166,7 +174,7 @@ call:
 
 ### `headers`
 
-HTTP headers to send for each request
+HTTP headers to send with each response
 
 ```yaml
 call:
@@ -211,6 +219,53 @@ call:
       - echo $REQUEST_METHOD
 ```
 
+### `authentication`
+
+List of users that are allowed to access this call. The users will be
+authenticated using HTTP [basic access authentication](https://en.wikipedia.org/wiki/Basic_access_authentication)
+and when invalid credentials are given, the call will be answered with HTTP error 401 (unauthorized).
+
+```yaml
+call:
+  - path: /private
+    authentication:
+      - username: user1
+        password: password123
+      - username: user2
+        password: password321
+    commands:
+      - cat /var/log/access.log
+```
+
+The list of users can also be read from an environment variable:
+
+```yaml
+call:
+  - path: /private
+    authentication:
+      env: USER_AUTH
+    commands:
+      - cat /var/log/access.log
+```
+
+It's also possible to read the users from a file:
+
+```yaml
+call:
+  - path: /private
+    authentication:
+      file: /etc/users.txt
+    commands:
+      - cat /var/log/access.log
+```
+
+For environment variables and files, use the following format:
+
+```
+user1:password123
+user2:password321
+```
+
 ### `stream`
 
 Start to send available data to the client before all commands have finished?
@@ -241,8 +296,8 @@ If unset, a new temporary directory will be created for each call.
 What should happen when a command fails? Possible values:
 
 - `ignore` - ignore the error and continue with the next command
-- `continue` don't execute any remaining commands and return HTTP status 200 (OK)
-- `fail` - (default) - stop the call and return HTTP status 500 (error)
+- `continue` - don't execute any remaining commands and return HTTP status 200 (OK)
+- `fail` (default) - stop the call and return HTTP status 500 (error)
 
 Example:
 

@@ -4,16 +4,16 @@ const it = mocha.it;
 const chai = require("chai");
 const expect = chai.expect;
 
-const { Init } = require("../lib/Init");
+const { Loop } = require("../lib/Loop");
 
-describe("Init", () => {
+describe("Loop", () => {
   it("should throw an error on missing commands", () => {
-    expect(() => new Init({})).to.throw("no init commands given!");
+    expect(() => new Loop({})).to.throw("no loop commands given!");
   });
 
   it("should throw an error on empty commands", () => {
-    expect(() => new Init({ commands: [] })).to.throw(
-      "no init commands given!"
+    expect(() => new Loop({ commands: [] })).to.throw(
+      "no loop commands given!"
     );
   });
 });

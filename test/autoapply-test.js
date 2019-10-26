@@ -104,6 +104,18 @@ describe("autoapply", () => {
     );
   });
 
+  it("should fail when an invalid command is given", () => {
+    const config = {
+      loop: {
+        commands: [[123]]
+      }
+    };
+    return expect(run(config)).to.be.rejectedWith(
+      Error,
+      "invalid command: 123"
+    );
+  });
+
   it("should fail when an invalid script is given", () => {
     const config = {
       loop: {
@@ -310,7 +322,7 @@ describe("autoapply", () => {
     });
   });
 
-  it("should be able to read the HTTP headers when calling the URL", done => {
+  it("should read the HTTP headers when calling the URL (1)", done => {
     const config = {
       call: [
         {
@@ -328,6 +340,52 @@ describe("autoapply", () => {
           cleanup(done, ctx, () => {
             expect(res).to.have.status(200);
             expect(res.text).to.equal("hello from localhost:3000\n");
+          })
+        );
+    });
+  });
+
+  it("should read the HTTP headers when calling the URL (2)", done => {
+    const config = {
+      call: [
+        {
+          path: "/header",
+          methods: ["*"],
+          commands: ['echo "hello from ${HTTP_X_TEST}"']
+        }
+      ]
+    };
+    run(config).then(ctx => {
+      chai
+        .request("http://localhost:3000")
+        .get("/header")
+        .set("X-Test", ["test1", "test2"])
+        .end((err, res) =>
+          cleanup(done, ctx, () => {
+            expect(res).to.have.status(200);
+            expect(res.text).to.equal("hello from test1, test2\n");
+          })
+        );
+    });
+  });
+
+  it("should be able to read the query params when calling the URL", done => {
+    const config = {
+      call: [
+        {
+          path: "/query",
+          commands: ['echo "${QUERY_TEST_123}"']
+        }
+      ]
+    };
+    run(config).then(ctx => {
+      chai
+        .request("http://localhost:3000")
+        .get("/query?test.123=hello-world")
+        .end((err, res) =>
+          cleanup(done, ctx, () => {
+            expect(res).to.have.status(200);
+            expect(res.text).to.equal("hello-world\n");
           })
         );
     });
@@ -370,6 +428,7 @@ describe("autoapply", () => {
         .end((err, res) =>
           cleanup(done, ctx, () => {
             expect(res).to.have.status(405);
+            expect(res.text).to.equal("Unsupported method: POST");
           })
         );
     });
@@ -393,6 +452,29 @@ describe("autoapply", () => {
           cleanup(done, ctx, () => {
             expect(res).to.have.status(200);
             expect(res.text).to.equal("hello\nworld\n");
+          })
+        );
+    });
+  });
+
+  it("should not throw errors when streaming", done => {
+    const config = {
+      call: [
+        {
+          path: "/fail",
+          stream: true,
+          commands: ["false"]
+        }
+      ]
+    };
+    run(config).then(ctx => {
+      chai
+        .request("http://localhost:3000")
+        .get("/fail")
+        .end((err, res) =>
+          cleanup(done, ctx, () => {
+            expect(res).to.have.status(200);
+            expect(res.text).to.equal("");
           })
         );
     });
@@ -657,6 +739,74 @@ describe("autoapply", () => {
           })
         );
     });
+  });
+
+  it("should return 401 when authentication is missing", done => {
+    const config = {
+      call: {
+        path: "/test",
+        commands: ["true"],
+        authentication: [{ username: "user", password: "pass" }]
+      }
+    };
+
+    run(config).then(ctx => {
+      chai
+        .request("http://localhost:3000")
+        .get("/test")
+        .end((err, res) =>
+          cleanup(done, ctx, () => {
+            expect(res).to.have.status(401);
+            expect(res.text).to.equal("Unauthorized!");
+          })
+        );
+    }, done);
+  });
+
+  it("should return 401 when wrong authentication is given", done => {
+    const config = {
+      call: {
+        path: "/test",
+        commands: ["true"],
+        authentication: [{ username: "user", password: "pass" }]
+      }
+    };
+
+    run(config).then(ctx => {
+      chai
+        .request("http://localhost:3000")
+        .get("/test")
+        .auth("user1", "pass")
+        .end((err, res) =>
+          cleanup(done, ctx, () => {
+            expect(res).to.have.status(401);
+            expect(res.text).to.equal("Unauthorized!");
+          })
+        );
+    }, done);
+  });
+
+  it("should run successfully when authentication is given", done => {
+    const config = {
+      call: {
+        path: "/test",
+        commands: ["echo $REQUEST_USERNAME"],
+        authentication: [{ username: "user", password: "pass" }]
+      }
+    };
+
+    run(config).then(ctx => {
+      chai
+        .request("http://localhost:3000")
+        .get("/test")
+        .auth("user", "pass")
+        .end((err, res) =>
+          cleanup(done, ctx, () => {
+            expect(res).to.have.status(200);
+            expect(res.text).to.equal("user\n");
+          })
+        );
+    }, done);
   });
 });
 

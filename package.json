@@ -33,7 +33,7 @@
     "chai-http": "^4.3.0",
     "coveralls": "^3.0.7",
     "eslint": "^6.6.0",
-    "mocha": "^6.2.2",
+    "mocha": "^7.0.0",
     "nyc": "^14.1.1",
     "prettier": "^1.18.2",
     "should": "^13.2.3"

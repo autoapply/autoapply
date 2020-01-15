@@ -817,5 +817,8 @@ function cleanup(done, ctx, f) {
   } catch (e) {
     err = e;
   }
-  ctx.stop().then(() => done(err), e => done(e));
+  ctx.stop().then(
+    () => done(err),
+    e => done(e)
+  );
 }

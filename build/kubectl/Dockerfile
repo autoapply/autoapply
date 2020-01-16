@@ -10,7 +10,7 @@ RUN curl --fail -L \
     && chmod +x /usr/local/bin/kubectl
 
 RUN curl --fail -L \
-    "https://github.com/mozilla/sops/releases/download/3.5.0/sops-3.5.0.linux" \
+    "https://github.com/mozilla/sops/releases/download/v3.5.0/sops-v3.5.0.linux" \
     > /usr/local/bin/sops \
     && chmod +x /usr/local/bin/sops
 

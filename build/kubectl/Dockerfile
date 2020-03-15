@@ -1,11 +1,11 @@
-FROM node:alpine
+FROM node:12-alpine
 
 RUN apk add --no-cache curl git openssh-client tar openssl tini gnupg \
-    && yarn global add yaml-crypt \
+    && yarn global add yaml-crypt@0.6.3 \
     && adduser -D -g autoapply autoapply
 
 RUN curl --fail -L \
-    "https://storage.googleapis.com/kubernetes-release/release/v1.17.1/bin/linux/amd64/kubectl" \
+    "https://storage.googleapis.com/kubernetes-release/release/v1.17.4/bin/linux/amd64/kubectl" \
     > /usr/local/bin/kubectl \
     && chmod +x /usr/local/bin/kubectl
 

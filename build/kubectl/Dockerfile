@@ -5,7 +5,7 @@ RUN apk add --no-cache curl git openssh-client tar openssl tini gnupg \
     && adduser -D -g autoapply autoapply
 
 RUN curl --fail -L \
-    "https://storage.googleapis.com/kubernetes-release/release/v1.17.4/bin/linux/amd64/kubectl" \
+    "https://storage.googleapis.com/kubernetes-release/release/v1.18.2/bin/linux/amd64/kubectl" \
     > /usr/local/bin/kubectl \
     && chmod +x /usr/local/bin/kubectl
 

@@ -67,13 +67,13 @@ function parseArguments(argv) {
   parser.add_argument("-v", "--version", {
     action: "version",
     version: pkg.version,
-    help: "Show version number and exit"
+    help: "show version number and exit"
   });
-  parser.add_argument(["-d", "--debug"], {
+  parser.add_argument("-d", "--debug", {
     action: "store_true",
     help: "show debugging output"
   });
-  parser.add_argument(["config"], {
+  parser.add_argument("config", {
     metavar: "<configuration>",
     help: "configuration file to use"
   });

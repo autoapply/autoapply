@@ -1,14 +1,14 @@
 FROM node:12-alpine
 
 RUN apk add --no-cache curl git openssh-client tar openssl tini \
-    && yarn global add yaml-crypt@0.6.3 \
+    && yarn global add yaml-crypt@0.7.1 \
     && adduser -D -g autoapply autoapply
 
 RUN curl --fail -L \
     "https://raw.githubusercontent.com/helm/helm/master/scripts/get" | /bin/sh
 
 RUN curl --fail -L \
-    "https://github.com/mozilla/sops/releases/download/v3.5.0/sops-v3.5.0.linux" \
+    "https://github.com/mozilla/sops/releases/download/v3.6.1/sops-v3.6.1.linux" \
     > /usr/local/bin/sops \
     && chmod +x /usr/local/bin/sops
 

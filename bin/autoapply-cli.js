@@ -16,7 +16,7 @@ const pkg = require("../package.json");
  * @param {string[]|*} argv the program arguments
  * @returns {Promise<Context>} the context
  */
-async function main(argv = null, catchErrors = true) {
+async function main(argv, catchErrors = true) {
   let debug = false;
   try {
     configureLogger();
@@ -61,19 +61,23 @@ function configureLogger() {
 function parseArguments(argv) {
   const parser = new argparse.ArgumentParser({
     prog: pkg.name,
-    version: pkg.version,
-    addHelp: true,
+    add_help: true,
     description: pkg.description
   });
-  parser.addArgument(["-d", "--debug"], {
-    action: "storeTrue",
-    help: "Show debugging output"
+  parser.add_argument("-v", "--version", {
+    action: "version",
+    version: pkg.version,
+    help: "Show version number and exit"
   });
-  parser.addArgument(["config"], {
+  parser.add_argument(["-d", "--debug"], {
+    action: "store_true",
+    help: "show debugging output"
+  });
+  parser.add_argument(["config"], {
     metavar: "<configuration>",
-    help: "Configuration file to use"
+    help: "configuration file to use"
   });
-  return parser.parseArgs(argv);
+  return parser.parse_args(argv);
 }
 
 async function start(args) {

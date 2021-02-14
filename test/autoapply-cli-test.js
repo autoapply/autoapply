@@ -30,7 +30,7 @@ function interceptStdio() {
 
 function writeConfig(config) {
   const file = tmp.fileSync({ postfix: ".yaml" });
-  fsExtra.writeFileSync(file.name, yaml.safeDump(config));
+  fsExtra.writeFileSync(file.name, yaml.dump(config));
   return file.name;
 }
 

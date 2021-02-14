@@ -90,10 +90,10 @@ async function start(args) {
     if (!Object.prototype.hasOwnProperty.call(process.env, envvar)) {
       throw new Error(`environment variable does not exist: ${envvar}`);
     }
-    config = yaml.safeLoad(process.env[envvar]);
+    config = yaml.load(process.env[envvar]);
   } else {
     const content = await readFile(args.config);
-    config = yaml.safeLoad(content);
+    config = yaml.load(content);
   }
 
   if (!config) {

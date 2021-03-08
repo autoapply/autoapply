@@ -1,6 +1,6 @@
 # autoapply
 
-[![Build Status](https://img.shields.io/travis/autoapply/autoapply.svg?style=flat-square)](https://travis-ci.org/autoapply/autoapply) [![Coverage status](https://img.shields.io/coveralls/github/autoapply/autoapply.svg?style=flat-square)](https://coveralls.io/github/autoapply/autoapply) [![Docker build status](https://img.shields.io/docker/build/autoapply/autoapply.svg?style=flat-square)](https://hub.docker.com/r/autoapply/autoapply/) [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/autoapply/autoapply/blob/master/LICENSE)
+[![Build Status](https://img.shields.io/travis/autoapply/autoapply.svg?style=flat-square)](https://travis-ci.org/autoapply/autoapply) [![Coverage status](https://img.shields.io/coveralls/github/autoapply/autoapply.svg?style=flat-square)](https://coveralls.io/github/autoapply/autoapply) [![Docker build status](https://img.shields.io/docker/automated/autoapply/autoapply.svg?style=flat-square)](https://hub.docker.com/r/autoapply/autoapply/) [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/autoapply/autoapply/blob/master/LICENSE)
 
 Automatically apply changes to a Kubernetes cluster.
 

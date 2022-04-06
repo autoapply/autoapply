@@ -15,6 +15,10 @@ workflows:
   build:
     jobs:
       - build:
+          context:
+            - docker.com
           filters:
+            branches:
+              ignore: /dependabot.*/
             tags:
               only: /.*/

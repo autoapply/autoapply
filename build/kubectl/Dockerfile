@@ -2,7 +2,7 @@ FROM node:14-alpine
 
 RUN apk add --no-cache curl git openssh-client tar openssl tini gnupg \
     && yarn global add yaml-crypt@0.7.6 \
-    && adduser -D -g autoapply autoapply
+    && adduser -D -u 1001 -g autoapply autoapply
 
 RUN curl --fail -L \
     "https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kubectl" \
@@ -19,6 +19,6 @@ RUN yarn global add "file:/tmp/src" \
     && rm -rf /tmp/src \
     && autoapply --version
 
-USER autoapply
+USER 1001:1001
 WORKDIR /home/autoapply
 ENTRYPOINT [ "/sbin/tini", "--", "autoapply" ]

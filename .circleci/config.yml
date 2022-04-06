@@ -6,8 +6,15 @@ jobs:
     steps:
       - checkout
       - run: yarn
+      - setup_remote_docker:
+          version: 20.10.11
+          docker_layer_caching: true
+      - run: .circleci/build.sh
 workflows:
   version: 2
   build:
     jobs:
-      - build
+      - build:
+          filters:
+            tags:
+              only: /.*/

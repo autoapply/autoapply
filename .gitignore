@@ -1,8 +1,8 @@
 .*
+!.circleci
 !.dockerignore
 !.gitignore
 !.eslintrc.json
-!.travis.yml
 
 node_modules/
 *.log

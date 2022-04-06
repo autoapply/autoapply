@@ -1,0 +1,13 @@
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: cimg/node:14.19
+    steps:
+      - checkout
+      - run: yarn
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build

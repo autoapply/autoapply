@@ -1,4 +1,4 @@
-FROM node:17-alpine
+FROM node:20.3-alpine
 
 RUN adduser -D -u 1001 -g autoapply autoapply && apk add --no-cache tini
 

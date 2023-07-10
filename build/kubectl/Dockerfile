@@ -1,4 +1,4 @@
-FROM node:17-alpine
+FROM node:20.3-alpine
 
 RUN apk add --no-cache curl git openssh-client tar openssl tini gnupg \
     && yarn global add yaml-crypt@0.7.7 \

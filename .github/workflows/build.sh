@@ -9,7 +9,7 @@ build_docker() {
     tag="$repository:$version"
     echo "Building $dockerfile -> $tag..."
     docker buildx build --platform=linux/amd64,linux/arm64 . -f "$dockerfile" -t "$tag" || exit 1
-    echo docker push "$tag" || exit 1
+    docker push "$tag" || exit 1
   else
     echo "Building $dockerfile..."
     docker buildx build --platform=linux/amd64,linux/arm64 . -f "$dockerfile" || exit 1

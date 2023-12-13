@@ -1,6 +1,9 @@
 #!/bin/sh
 
+set -e
+
 repository="autoapply/autoapply"
+platforms="linux/amd64,linux/arm64"
 
 build_docker() {
   dockerfile="$1"
@@ -8,17 +11,16 @@ build_docker() {
   if [ -n "$version" ]; then
     tag="$repository:$version"
     echo "Building $dockerfile -> $tag..."
-    docker buildx build --platform=linux/amd64,linux/arm64 . -f "$dockerfile" -t "$tag" || exit 1
-    docker push "$tag" || exit 1
+    docker buildx build --push --platform="$platform" . -f "$dockerfile" -t "$tag"
   else
     echo "Building $dockerfile..."
-    docker buildx build --platform=linux/amd64,linux/arm64 . -f "$dockerfile" || exit 1
+    docker buildx build --platform="$platform" . -f "$dockerfile"
     echo "Skipping docker push for ref '$REF_NAME'"
   fi
 }
 
 echo "${DOCKER_PASSWORD}" |
-  docker login -u "${DOCKER_USERNAME}" --password-stdin || exit 1
+  docker login -u "${DOCKER_USERNAME}" --password-stdin
 
 if [ "$REF_NAME" = "main" ]; then
   build_docker "build/Dockerfile" "latest"

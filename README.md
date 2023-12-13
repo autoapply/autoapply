@@ -1,6 +1,6 @@
 # autoapply
 
-[![CircleCI](https://img.shields.io/circleci/build/github/autoapply/autoapply/main?style=flat-square)](https://app.circleci.com/pipelines/github/autoapply/autoapply) [![Coverage status](https://img.shields.io/coveralls/github/autoapply/autoapply.svg?style=flat-square)](https://coveralls.io/github/autoapply/autoapply) [![Docker Pulls](https://img.shields.io/docker/pulls/autoapply/autoapply?style=flat-square)](https://hub.docker.com/r/autoapply/autoapply/) [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/autoapply/autoapply/blob/master/LICENSE)
+[![Coverage status](https://img.shields.io/coveralls/github/autoapply/autoapply.svg?style=flat-square)](https://coveralls.io/github/autoapply/autoapply) [![Docker Pulls](https://img.shields.io/docker/pulls/autoapply/autoapply?style=flat-square)](https://hub.docker.com/r/autoapply/autoapply/) [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/autoapply/autoapply/blob/master/LICENSE)
 
 Automatically apply changes to a Kubernetes cluster.
 

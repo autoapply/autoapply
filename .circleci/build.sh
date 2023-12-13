@@ -8,11 +8,11 @@ build_docker() {
   if [ -n "$version" ]; then
     tag="$repository:$version"
     echo "Building $dockerfile -> $tag..."
-    docker build . -f "$dockerfile" -t "$tag" || exit 1
+    docker buildx build --platform=linux/amd64,linux/arm64 . -f "$dockerfile" -t "$tag" || exit 1
     docker push "$tag" || exit 1
   else
     echo "Building $dockerfile..."
-    docker build . -f "$dockerfile" || exit 1
+    docker buildx build --platform=linux/amd64,linux/arm64 . -f "$dockerfile" || exit 1
     echo "Skipping docker push for branch '$CIRCLE_BRANCH'"
   fi
 }

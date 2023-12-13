@@ -1,6 +1,7 @@
 .*
 !.circleci
 !.dockerignore
+!.github
 !.gitignore
 !.eslintrc.json
 

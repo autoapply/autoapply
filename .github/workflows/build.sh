@@ -11,10 +11,10 @@ build_docker() {
   if [ -n "$version" ]; then
     tag="$repository:$version"
     echo "Building $dockerfile -> $tag..."
-    docker buildx build --push --platform="$platform" . -f "$dockerfile" -t "$tag"
+    docker buildx build --push --platform="$platforms" . -f "$dockerfile" -t "$tag"
   else
     echo "Building $dockerfile..."
-    docker buildx build --platform="$platform" . -f "$dockerfile"
+    docker buildx build --platform="$platforms" . -f "$dockerfile"
     echo "Skipping docker push for ref '$REF_NAME'"
   fi
 }

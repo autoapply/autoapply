@@ -1,6 +1,6 @@
 {
   "name": "autoapply",
-  "version": "0.19.3",
+  "version": "0.19.4",
   "description": "Automatically apply changes to a Kubernetes cluster",
   "license": "MIT",
   "author": "Pascal",

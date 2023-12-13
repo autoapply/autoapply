@@ -1,0 +1,21 @@
+name: Build
+on:
+  - push
+permissions:
+  packages: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push Docker image
+        run: .github/workflows/build.sh
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          REF_NAME: ${{ github.ref_name }}
